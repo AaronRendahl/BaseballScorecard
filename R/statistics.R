@@ -66,7 +66,7 @@ makedata <- function(d) {
 #   group_by(Lineup) %>% summarize(RBI=n(), .groups="drop")
 
 getBA <- function(H, AB) {
-  if_else(!is.na(AB) & (AB > 5), H/AB, as.numeric(NA))
+  if_else(!is.na(AB) & (AB > 1), H/AB, as.numeric(NA))
 }
 getIP <- function(x) {
   a <- x %/% 3
@@ -282,7 +282,7 @@ addData <- function(wb, sheet, dat, header, row) {
            rows=(1 + row + 1:nrow(dat)),
            gridExpand=TRUE, stack=TRUE)
   addStyle(wb, sheet, createStyle(numFmt="0.000"),
-           cols=which(names(dat) %in% c("BA", "Opp. OBP", "OBPE")),
+           cols=which(names(dat) %in% c("BA", "Opp. OBP", "OBPE") | stringr::str_detect(names(dat), "Sum$")),
            rows=(1 + row + 1:nrow(dat)),
            gridExpand=TRUE, stack=TRUE)
   addStyle(wb, sheet, createStyle(numFmt="0%"),
@@ -334,12 +334,14 @@ addDataList <- function(wb, sheet, x) {
     }
   }
   w0 <- 5
-  wx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP", "Opp. OBP"), width=8),
-                  tibble(name=c("SR", "K/PA", "BBHB/BF"), width=7),
+  wx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
+                  tibble(name=c("SR", "K/PA", ), width=7),
+                  tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
                   tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
   xdf <- x[sapply(x, is.data.frame)]
   ws <- map(xdf, ~tibble(col=1:ncol(.), name=names(.))) %>% bind_rows() %>%
-    left_join(wx, by="name") %>% mutate(width=replace_na(width, w0)) %>%
+    left_join(wx, by="name") %>% mutate(width=replace_na(width, w0),
+                                        width=if_else(stringr::str_detect(name, "Sum$"), 20, width)) %>%
     group_by(col) %>% summarize(width=max(width), .groups="drop") %>% arrange(col)
   setColWidths(wb, sheet, cols = ws$col, widths = ws$width)
   wb
