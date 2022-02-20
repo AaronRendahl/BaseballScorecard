@@ -335,7 +335,7 @@ addDataList <- function(wb, sheet, x) {
   }
   w0 <- 5
   wx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
-                  tibble(name=c("SR", "K/PA", ), width=7),
+                  tibble(name=c("SR", "K/PA"), width=7),
                   tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
                   tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
   xdf <- x[sapply(x, is.data.frame)]
