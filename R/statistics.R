@@ -27,21 +27,38 @@ makedata <- function(d) {
       unnest(data) %>% mutate(X=X+X4) %>% select(-X3, -X4) %>%
       ungroup() |> pull(X)
   }
+  get_OutWho <- function(Lineup, Inning, OutDuring) {
+    out <- tibble(Lineup=Lineup, Inning=Inning, OutDuring=OutDuring)
+    out <- out %>% mutate(OutWho=NA, idx=1:n())
+    tmp <- out %>% filter(!is.na(OutDuring))
+    for(i in seq_len(nrow(tmp))) {
+      if(tmp$OutDuring[i]==0) {
+        out$OutWho[tmp$idx[i]] <- 0
+      } else {
+        foo <- filter(out, Lineup==tmp$OutDuring[i] & idx >= tmp$idx[i] & Inning==tmp$Inning[i])
+        stopifnot(nrow(foo)>0)
+        out$outWho[foo$idx[1]] <- tmp$Lineup[i]
+      }
+    }
+    out <- out %>% select(-idx)
+    pull(out, outWho)
+  }
   ## now process as needed, adding variables
   ## Outcome: to match Outcome column in key
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
   ## OutDuring: if batter gets out later, during what at-bat did it happen?
+  ## OutWho: who else got out during this at bat?
   ## pitch_batter: total pitches during at-bat
   ## pitch_pitcher: pitches so far by this pitcher
   ## lastpitch: TRUE/FALSE if is last batter for this pitcher
   ## X: if need to bump column on scoresheet
-  ## whoout: who else got out during this at bat?
   out <- d %>%
     rowwise() %>%
     mutate(Outcome=get_Outcome(Play, B1),
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
-           OutDuring=get_OutDuring(B2, B3, B4)) %>%
+           OutDuring=get_OutDuring(B2, B3, B4),
     ungroup() %>%
+    mutate(OutWho=get_OutWho(Lineup, Inning, OutDuring)) %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
     mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0)) %>%
     mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) %>% ## really should use key for outcome...
@@ -50,18 +67,7 @@ makedata <- function(d) {
     ungroup() %>%
     ## move innings over as needed
     mutate(X=get_X(Lineup, Inning))
-  out <- out %>% mutate(whoout=NA, idx=1:n())
-  tmp <- out %>% filter(!is.na(OutDuring))
-  for(i in seq_len(nrow(tmp))) {
-    if(tmp$OutDuring[i]==0) {
-      out$whoout[tmp$idx[i]] <- 0
-    } else {
-      foo <- filter(out, Lineup==tmp$OutDuring[i] & idx >= tmp$idx[i] & Inning==tmp$Inning[i])
-      stopifnot(nrow(foo)>0)
-      out$whoout[foo$idx[1]] <- tmp$Lineup[i]
-    }
-  }
-  out <- out %>% select(-idx)
+
 
   ## error check
   tmp <- out$Outcome[! out$Outcome %in% key$Outcome]
@@ -127,8 +133,8 @@ pitcher_stats <- function(game, who=c("away", "home")) {
     x <- x %>% left_join(select(rr[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
-    d %>% select(Pitcher, Balls, Strikes, Fouls, Outcome, whoout) %>% left_join(key, by="Outcome") %>%
-      mutate(Out=Out+!is.na(whoout)) %>% select(-whoout) %>% ## NEED TO FIX FOR BATTER, NOT PLAYER!!
+    d %>% select(Pitcher, Balls, Strikes, Fouls, Outcome, OutWho) %>% left_join(key, by="Outcome") %>%
+      mutate(Out=Out+!is.na(OutWho)) %>% select(-OutWho) %>% ## NEED TO FIX FOR BATTER, NOT PLAYER!!
       mutate(Strikes=Strikes+(Pitch=="Strike"), Balls=Balls+(Pitch=="Ball")) %>%
       mutate(Order=as.integer(as_factor(paste(Pitcher)))) %>%
       group_by(Order, Pitcher) %>% summarize(
