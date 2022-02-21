@@ -18,6 +18,15 @@ makedata <- function(d) {
   get_Outcome <- function(Play, B1) {
     if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
   }
+  get_X <- function(Lineup, Inning) {
+    tibble(Lineup=Lineup, Inning=Inning) |>
+      group_by(Lineup, Inning) %>% mutate(X=1:n()) %>%
+      group_by(Inning) %>% mutate(X=cummax(X) - 1) %>%
+      nest() %>% ungroup() %>%
+      mutate(X3=map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) %>%
+      unnest(data) %>% mutate(X=X+X4) %>% select(-X3, -X4) %>%
+      ungroup() |> pull(X)
+  }
   ## now process as needed, adding variables
   ## Outcome: to match Outcome column in key
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
@@ -35,20 +44,12 @@ makedata <- function(d) {
     ungroup() %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
     mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0)) %>%
-    mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) %>%
+    mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) %>% ## really should use key for outcome...
     group_by(Pitcher, Inning) %>% mutate(pitch_pitcher=cumsum(pitch_batter),
                                  lastpitch=1:n()==n()) %>%
     ungroup() %>%
     ## move innings over as needed
-    group_by(Lineup, Inning) %>% mutate(X=1:n()) %>%
-    group_by(Inning) %>% mutate(X=cummax(X) - 1) %>%
-    nest() %>% ungroup() %>%
-    mutate(X3=map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) %>%
-    unnest(data) %>% mutate(X=X+X4) %>% select(-X3, -X4) %>%
-    ungroup()
-    # mutate(X=max(Lineup)) %>%
-    # group_by(Inning) %>% mutate(X=(1:n()-1) %/% X, X=X-lag(X, default=0)) %>%
-    # ungroup() %>% mutate(X=cumsum(X))
+    mutate(X=get_X(Lineup, Inning))
   out <- out %>% mutate(whoout=NA, idx=1:n())
   tmp <- out %>% filter(!is.na(OutDuring))
   for(i in seq_len(nrow(tmp))) {
