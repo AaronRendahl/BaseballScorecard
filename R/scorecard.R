@@ -1,8 +1,8 @@
 pitch_count <- function(x) {
   x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
   bind_rows(
-    x |> group_by(Inning, Pitcher) |> summarize(N=sum(pitch_batter), .groups="drop"),
-    x |> group_by(Pitcher) |> summarize(N=sum(pitch_batter), .groups="drop") |> mutate(Inning=0)
+    x |> group_by(Inning, Pitcher) |> summarize(N=sum(PitchesAtBat), .groups="drop"),
+    x |> group_by(Pitcher) |> summarize(N=sum(PitchesAtBat), .groups="drop") |> mutate(Inning=0)
   ) |> mutate(Order=as.integer(Pitcher))
 }
 
@@ -42,7 +42,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
   runslashcolor <- "black"
   pitchtextcolor <- "gray20"
 
-  makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, lastpitch=FALSE,
+  makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
                       out=NA, bybase, play=NA, basesize=0.13, top=FALSE) {
     basesize <- unit(basesize, "inches")
     pitchsize <- unit(0.1,"inches")
@@ -121,7 +121,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
                      x=unit(0.5, "npc") + basex/2,
                      y=unit(1, "npc") - pitchsize,
                      gp=gpar(fontsize=pitchcountsize))
-      bb <- if(!lastpitch) { NULL } else {
+      bb <- if(!LastPitch) { NULL } else {
         rectGrob(x=unit(0.5, "npc") + basex/2, y=unit(1, "npc") - pitchsize,
                  width=unit(1.5,"grobwidth", a2), height=unit(1.5,"grobheight", a2))
       }
@@ -358,7 +358,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
         rowwise() |>
         mutate(box=list(
           makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
-                  pitchcount=c(pitch_batter, pitch_pitcher), lastpitch=lastpitch,
+                  pitchcount=c(PitchesAtBat, PitchesSoFar), LastPitch=LastPitch,
                   play=Play, bybase=c(B1, B2, B3, B4),
                   out=Out, basesize=basesize, top=top)
         )) |> ungroup()

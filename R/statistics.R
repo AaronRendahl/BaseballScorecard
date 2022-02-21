@@ -49,14 +49,29 @@ makedata <- function(d) {
     out <- out |> select(-idx)
     pull(out, OutWho)
   }
+  get_PitchesAtBat <- function(Count, Outcome) {
+    Count + (key$Pitch[match(tmp, key$Outcome)]!="No Pitch")*1L
+  }
+  get_PitchesSoFar <- function(Pitcher, Inning, PitchesAtBat) {
+    tibble(Pitcher=Pitcher, Inning=Inning) |>
+      group_by(Pitcher, Inning) |>
+      mutate(PitchesSoFar=cumsum(PitchesAtBat)) |>
+      pull(PitchesSoFar)
+  }
+  get_LastPitch <- function(Pitcher, Inning) {
+    tibble(Pitcher=Pitcher, Inning=Inning) |>
+      group_by(Pitcher, Inning) |>
+      mutate(LastPitch=1:n()==n()) |>
+      pull(LastPitch)
+  }
   ## now process as needed, adding variables
   ## Outcome: to match Outcome column in key
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
   ## OutDuring: if batter gets out later, during what at-bat did it happen?
   ## OutWho: who else got out during this at bat?
-  ## pitch_batter: total pitches during at-bat
-  ## pitch_pitcher: pitches so far by this pitcher
-  ## lastpitch: TRUE/FALSE if is last batter for this pitcher
+  ## PitchesAtBat: total pitches during at-bat
+  ## PitchesSoFar: pitches so far by this pitcher
+  ## LastPitch: TRUE/FALSE if is last batter for this pitcher
   ## X: if need to bump column on scoresheet
   out <- d |>
     mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0L)) |>
@@ -65,10 +80,9 @@ makedata <- function(d) {
            OutDuring=get_OutDuring(B2, B3, B4),
            OutWho=get_OutWho(Lineup, Inning, OutDuring)) |>
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) |>
-    mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) |> ## really should use key for outcome...
-    group_by(Pitcher, Inning) |> mutate(pitch_pitcher=cumsum(pitch_batter),
-                                 lastpitch=1:n()==n()) |>
-    ungroup() |>
+    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome),
+           PitchesSoFar=get_PitchesSoFar(Pitcher, Inning, PitchesAtBat),
+           LastPitch=get_LastPitch(Pitcher, Inning))
     ## move innings over as needed
     mutate(X=get_X(Lineup, Inning))
 
