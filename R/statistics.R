@@ -43,7 +43,7 @@ makedata <- function(d) {
       } else {
         foo <- filter(out, Lineup==tmp$OutDuring[i] & idx >= tmp$idx[i] & Inning==tmp$Inning[i])
         stopifnot(nrow(foo)>0)
-        out$outWho[foo$idx[1]] <- tmp$Lineup[i]
+        out$OutWho[foo$idx[1]] <- tmp$Lineup[i]
       }
     }
     out <- out |> select(-idx)
