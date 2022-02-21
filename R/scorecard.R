@@ -1,9 +1,9 @@
 pitch_count <- function(x) {
-  x <- x %>% mutate(Pitcher=fct_inorder(as.character(Pitcher)))
+  x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
   bind_rows(
-    x %>% group_by(Inning, Pitcher) %>% summarize(N=sum(pitch_batter), .groups="drop"),
-    x %>% group_by(Pitcher) %>% summarize(N=sum(pitch_batter), .groups="drop") %>% mutate(Inning=0)
-  ) %>% mutate(Order=as.integer(Pitcher))
+    x |> group_by(Inning, Pitcher) |> summarize(N=sum(pitch_batter), .groups="drop"),
+    x |> group_by(Pitcher) |> summarize(N=sum(pitch_batter), .groups="drop") |> mutate(Inning=0)
+  ) |> mutate(Order=as.integer(Pitcher))
 }
 
 scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "two"), nthem=12) {
@@ -203,12 +203,12 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
 
   lower <- function(game) {
     if(!missing(game)) {
-      x1 <- pitch_count(game) %>% mutate(N=as.character(N))
-      x2 <- filter(x1, Inning==0) %>% mutate(N=paste0("#", levels(Pitcher)),
+      x1 <- pitch_count(game) |> mutate(N=as.character(N))
+      x2 <- filter(x1, Inning==0) |> mutate(N=paste0("#", levels(Pitcher)),
                                              Inning=-1, Pitcher=NA)
       ins <- seq_len(max(x1$Inning))
       x3 <- tibble(Inning=c(-1,0,ins), N=c("P", "Total", as.character(ins)), Order=0)
-      x <- bind_rows(x1, x2, x3) %>%
+      x <- bind_rows(x1, x2, x3) |>
         mutate(x=(Inning+2)/16,
                y=1-(Order+0.5)/7)
       gf <- frameGrob(grid.layout())
@@ -303,12 +303,12 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
       a4 <- segmentsGrob(x0=.65, x1=1, y0=ys, y1=ys, gp=gpar(lwd=0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
-        score <- get_score(game) %>% as.data.frame() %>%
-          rownames_to_column("team") %>% rename(`7`="R")
+        score <- get_score(game) |> as.data.frame() |>
+          rownames_to_column("team") |> rename(`7`="R")
         teams <- score$team
         score$team <- 1:2
-        score <- score %>% mutate(team=1:2) %>% pivot_longer(-team, names_to="inning") %>%
-          mutate(inning=as.integer(inning)) %>%
+        score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
+          mutate(inning=as.integer(inning)) |>
           mutate(xx = xx[inning], yy=yy[team])
         out2 <- textGrob(score$value, x=xx[score$inning], y=yy[score$team],
                          gp=gpar(fontsize=inningtextsize))
@@ -354,15 +354,15 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
       }
     } else {
       # make the graphics...
-      d <- d %>% group_by(Inning) %>% mutate(top=(1:n()==1)) %>%
-        rowwise() %>%
+      d <- d |> group_by(Inning) |> mutate(top=(1:n()==1)) |>
+        rowwise() |>
         mutate(box=list(
           makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
                   pitchcount=c(pitch_batter, pitch_pitcher), lastpitch=lastpitch,
                   play=Play, bybase=c(B1, B2, B3, B4),
                   out=Out, basesize=basesize, top=top)
-        )) %>% ungroup()
-      inning_list <- d %>% group_by(Inning) %>% summarize(X=min(Inning+X), .groups="drop")
+        )) |> ungroup()
+      inning_list <- d |> group_by(Inning) |> summarize(X=min(Inning+X), .groups="drop")
       for(idx in seq_len(nrow(d))) {
         gf <- placeGrob(gf, d$box[[idx]], row=d$Lineup[idx], col=d$Inning[idx]+d$X[idx])
       }
@@ -426,7 +426,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
     ## gf1 <- makeside(header="score", nrow=9) ## team="Roseville", nrow=12) ## for blank/9
     gf2 <- makeside(header="about", nrow=nthem)
   } else {
-    tmp <- game$lineup %>% pivot_longer(-Lineup, values_drop_na=TRUE)
+    tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
     nr <- max(c(tmp$Lineup,11))
     if("Roseville"==names(game$lineup)[3]) {
       gf1 <- makeside(game, "home", nrow=nr)

@@ -14,8 +14,8 @@ makedata <- function(d) {
       B <- c(B2, B3, B4)
       X <- stringr::str_subset(B, "^X")
       if(length(X) > 0) {
-        out <- str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") %>%
-          as.integer() %>% replace_na(0L)
+        out <- str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") |>
+          as.integer() |> replace_na(0L)
       }
       out
     }
@@ -26,17 +26,17 @@ makedata <- function(d) {
   }
   get_X <- function(Lineup, Inning) {
     tibble(Lineup=Lineup, Inning=Inning) |>
-      group_by(Lineup, Inning) %>% mutate(X=1:n()) %>%
-      group_by(Inning) %>% mutate(X=cummax(X) - 1) %>%
-      nest() %>% ungroup() %>%
-      mutate(X3=map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) %>%
-      unnest(data) %>% mutate(X=X+X4) %>% select(-X3, -X4) %>%
+      group_by(Lineup, Inning) |> mutate(X=1:n()) |>
+      group_by(Inning) |> mutate(X=cummax(X) - 1) |>
+      nest() |> ungroup() |>
+      mutate(X3=map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
+      unnest(data) |> mutate(X=X+X4) |> select(-X3, -X4) |>
       ungroup() |> pull(X)
   }
   get_OutWho <- function(Lineup, Inning, OutDuring) {
     out <- tibble(Lineup=Lineup, Inning=Inning, OutDuring=OutDuring)
-    out <- out %>% mutate(OutWho=NA, idx=1:n())
-    tmp <- out %>% filter(!is.na(OutDuring))
+    out <- out |> mutate(OutWho=NA, idx=1:n())
+    tmp <- out |> filter(!is.na(OutDuring))
     for(i in seq_len(nrow(tmp))) {
       if(tmp$OutDuring[i]==0) {
         out$OutWho[tmp$idx[i]] <- 0
@@ -46,7 +46,7 @@ makedata <- function(d) {
         out$outWho[foo$idx[1]] <- tmp$Lineup[i]
       }
     }
-    out <- out %>% select(-idx)
+    out <- out |> select(-idx)
     pull(out, OutWho)
   }
   ## now process as needed, adding variables
@@ -58,17 +58,17 @@ makedata <- function(d) {
   ## pitch_pitcher: pitches so far by this pitcher
   ## lastpitch: TRUE/FALSE if is last batter for this pitcher
   ## X: if need to bump column on scoresheet
-  out <- d %>%
+  out <- d |>
+    mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0L)) |>
     mutate(Outcome=get_Outcome(Play, B1),
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
            OutDuring=get_OutDuring(B2, B3, B4),
-           OutWho=get_OutWho(Lineup, Inning, OutDuring)) %>%
-    mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
-    mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0L)) %>%
-    mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) %>% ## really should use key for outcome...
-    group_by(Pitcher, Inning) %>% mutate(pitch_pitcher=cumsum(pitch_batter),
-                                 lastpitch=1:n()==n()) %>%
-    ungroup() %>%
+           OutWho=get_OutWho(Lineup, Inning, OutDuring)) |>
+    mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) |>
+    mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) |> ## really should use key for outcome...
+    group_by(Pitcher, Inning) |> mutate(pitch_pitcher=cumsum(pitch_batter),
+                                 lastpitch=1:n()==n()) |>
+    ungroup() |>
     ## move innings over as needed
     mutate(X=get_X(Lineup, Inning))
 
@@ -82,9 +82,9 @@ makedata <- function(d) {
 }
 
 ## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
-# d1 %>% select(Lineup, Outcome, B4) %>% mutate(RBI_by=if_else(Outcome=="HR", Lineup, B4)) %>%
-#   filter(!is.na(RBI_by)) %>% select(Lineup=RBI_by) %>%
-#   group_by(Lineup) %>% summarize(RBI=n(), .groups="drop")
+# d1 |> select(Lineup, Outcome, B4) |> mutate(RBI_by=if_else(Outcome=="HR", Lineup, B4)) |>
+#   filter(!is.na(RBI_by)) |> select(Lineup=RBI_by) |>
+#   group_by(Lineup) |> summarize(RBI=n(), .groups="drop")
 
 getBA <- function(H, AB) {
   if_else(!is.na(AB) & (AB > 1), H/AB, as.numeric(NA))
@@ -104,25 +104,25 @@ batter_stats <- function(game, who=c("away", "home"), teamname=TRUE) {
   teamname <- if(teamname) team else "Team"
   names(x)[2] <- "Number"
   if(team %in% names(rr)) {
-    x <- x %>% left_join(select(rr[[team]], c(Number, Name)), by="Number")
+    x <- x |> left_join(select(rr[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
-    d %>% select(Lineup, Outcome, ToBase) %>% left_join(key, by="Outcome") %>%
-      group_by(Lineup) %>% summarize(
+    d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
+      group_by(Lineup) |> summarize(
         G=NA,
         PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), BA=NA,
         R=sum(ToBase==4), Blank=NA,
         K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
         ROE=sum(Outcome=="E"),
         `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-        .groups="drop") %>%
+        .groups="drop") |>
       mutate(BA=getBA(H, AB))
   }
   bind_rows(
-    x %>% right_join(ff(d), by="Lineup"),
-    d %>% mutate(Lineup=NA) %>% ff() %>% mutate(Number=NA, Name=teamname) %>%
+    x |> right_join(ff(d), by="Lineup"),
+    d |> mutate(Lineup=NA) |> ff() |> mutate(Number=NA, Name=teamname) |>
       mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
-  ) %>% select(any_of(c("Number", "Name","G", "Lineup")), everything())
+  ) |> select(any_of(c("Number", "Name","G", "Lineup")), everything())
 }
 
 ## PITCHER STATS
@@ -134,14 +134,14 @@ pitcher_stats <- function(game, who=c("away", "home")) {
   team <- colnames(x)[2]
   names(x)[2] <- "Number"
   if(team %in% names(rr)) {
-    x <- x %>% left_join(select(rr[[team]], c(Number, Name)), by="Number")
+    x <- x |> left_join(select(rr[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
-    d %>% select(Pitcher, Balls, Strikes, Fouls, Outcome, OutWho) %>% left_join(key, by="Outcome") %>%
-      mutate(Out=Out+!is.na(OutWho)) %>% select(-OutWho) %>% ## NEED TO FIX FOR BATTER, NOT PLAYER!!
-      mutate(Strikes=Strikes+(Pitch=="Strike"), Balls=Balls+(Pitch=="Ball")) %>%
-      mutate(Order=as.integer(as_factor(paste(Pitcher)))) %>%
-      group_by(Order, Pitcher) %>% summarize(
+    d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, OutWho) |> left_join(key, by="Outcome") |>
+      mutate(Out=Out+!is.na(OutWho)) |> select(-OutWho) |> ## NEED TO FIX FOR BATTER, NOT PLAYER!!
+      mutate(Strikes=Strikes+(Pitch=="Strike"), Balls=Balls+(Pitch=="Ball")) |>
+      mutate(Order=as.integer(as_factor(paste(Pitcher)))) |>
+      group_by(Order, Pitcher) |> summarize(
         G=NA,IP=NA,
         Outs=sum(Out), BF=sum(Outcome!="_"),
         S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls), SR=S/P,
@@ -149,32 +149,32 @@ pitcher_stats <- function(game, who=c("away", "home")) {
         K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
         ROE=sum(Outcome=="E"),
         `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-        .groups="drop") %>% select(Pitcher, everything()) %>% rename(Number="Pitcher")
+        .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
   }
   bind_rows(
-    d %>% mutate(Pitcher=0) %>% ff() %>% mutate(Number=NA, Name="Team", Order=Inf) %>%
+    d |> mutate(Pitcher=0) |> ff() |> mutate(Number=NA, Name="Team", Order=Inf) |>
       mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF),
-    x %>% right_join(ff(d), by="Number")
-  ) %>% mutate(IP=getIP(Outs)) %>% select(any_of(c("Number", "Name")), everything()) %>%
-  arrange(Order) %>% select(-Lineup, -Order)
+    x |> right_join(ff(d), by="Number")
+  ) |> mutate(IP=getIP(Outs)) |> select(any_of(c("Number", "Name")), everything()) |>
+  arrange(Order) |> select(-Lineup, -Order)
 }
 
 readgame <- function(file) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
-  when <- tmp[[1]] %>% str_replace("([ap])$", "\\1m")
+  when <- tmp[[1]] |> str_replace("([ap])$", "\\1m")
   about <- if(ncol(tmp) > 1) tmp[[2]] else "GSBL"
   g1 <- readxl::read_excel(file, "Lineup", skip=1)
   stopifnot(names(g1)[2:3] %in% ss[2:3])
-  g1_away <- readxl::read_excel(file, names(g1)[2]) %>% makedata()
-  g1_home <- readxl::read_excel(file, names(g1)[3]) %>% makedata()
+  g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata()
+  g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata()
   tibble(when=when, about=about, lineup=list(g1), away=list(g1_away), home=list(g1_home))
 }
 
 readrosters <- function(file) {
   ss <- readxl::excel_sheets(file)
-  lapply(ss, readxl::read_excel, path=file) %>% setNames(ss)
+  lapply(ss, readxl::read_excel, path=file) |> setNames(ss)
 }
 
 all_stats <- function(games, team) {
@@ -188,32 +188,32 @@ all_stats <- function(games, team) {
     }
   }
   ss <- lapply(games, both_stats, team)
-  b.all <- bind_rows(lapply(ss, function(x) x$batter)) %>%
-    group_by(Number, Name) %>% mutate(G=n()) %>% ungroup() %>%
-    mutate(Lineup=NA) %>% pivot_longer(-c(Lineup, Number, Name, G)) %>%
-    mutate(across("name", as_factor)) %>%
-    group_by(Number, Name, G, Lineup, name) %>% summarize(value=sum(value), .groups="drop") %>%
-    pivot_wider() %>% mutate(BA=getBA(H,AB)) %>%
+  b.all <- bind_rows(lapply(ss, function(x) x$batter)) |>
+    group_by(Number, Name) |> mutate(G=n()) |> ungroup() |>
+    mutate(Lineup=NA) |> pivot_longer(-c(Lineup, Number, Name, G)) |>
+    mutate(across("name", as_factor)) |>
+    group_by(Number, Name, G, Lineup, name) |> summarize(value=sum(value), .groups="drop") |>
+    pivot_wider() |> mutate(BA=getBA(H,AB)) |>
     mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
-  p.all <- bind_rows(lapply(ss, function(x) x$pitcher)) %>%
-    group_by(Number, Name) %>% mutate(G=n()) %>% ungroup() %>%
-    pivot_longer(-c(Number, Name, G)) %>%
-    mutate(across("name", as_factor)) %>%
-    group_by(Number, Name, G, name) %>% summarize(value=sum(value), .groups="drop") %>%
-    pivot_wider() %>% mutate(SR=S/P) %>%
+  p.all <- bind_rows(lapply(ss, function(x) x$pitcher)) |>
+    group_by(Number, Name) |> mutate(G=n()) |> ungroup() |>
+    pivot_longer(-c(Number, Name, G)) |>
+    mutate(across("name", as_factor)) |>
+    group_by(Number, Name, G, name) |> summarize(value=sum(value), .groups="drop") |>
+    pivot_wider() |> mutate(SR=S/P) |>
     mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF, IP=getIP(Outs))
   list(Batting=b.all, Pitching=p.all)
 }
 
 get_score <- function(game) {
-  a1 <- game$away %>% group_by(Inning) %>% summarize(R=sum(ToBase==4), .groups="drop") %>% rename(away="R")
-  a2 <- game$home %>% group_by(Inning) %>% summarize(R=sum(ToBase==4), .groups="drop") %>% rename(home="R")
+  a1 <- game$away |> group_by(Inning) |> summarize(R=sum(ToBase==4), .groups="drop") |> rename(away="R")
+  a2 <- game$home |> group_by(Inning) |> summarize(R=sum(ToBase==4), .groups="drop") |> rename(home="R")
   Final <- c(sum(a1$away), sum(a2$home))
-  out <- full_join(a1, a2, by="Inning") %>% as.data.frame()
+  out <- full_join(a1, a2, by="Inning") |> as.data.frame()
   rownames(out) <- out$Inning
   out$Inning <- NULL
   colnames(out) <- names(game$lineup[2:3])
-  out %>% as.matrix() %>% t() %>% cbind(R=Final)
+  out |> as.matrix() |> t() |> cbind(R=Final)
 }
 
 game_stats <- function(game) {
@@ -251,17 +251,17 @@ makestatsfile <- function(games, team, filename) {
   them_stats <- game_stats[[them]]
 
   b0 <- bind_rows(us_stats$Batting,
-                  them_stats$Batting %>% filter(is.na(Lineup)))
+                  them_stats$Batting |> filter(is.na(Lineup)))
   b1x <- b0[1:(nrow(b0)-2), ]
-  b2x <- b0[1:2 + (nrow(b0)-2), ] %>% rename(Team="Name")
+  b2x <- b0[1:2 + (nrow(b0)-2), ] |> rename(Team="Name")
   b3x <- all_stats$Batting
-  list.batting <- list(b1x, b2x, b3x) %>%
+  list.batting <- list(b1x, b2x, b3x) |>
     setNames(c("Roseville Game Stats", "Team Game Stats", "Roseville Season Stats"))
 
   a1x <- us_stats$Pitching
   a2x <- them_stats$Pitching
   a3x <- all_stats$Pitching
-  list.pitching <- list(us=a1x, them=a2x, season=a3x) %>%
+  list.pitching <- list(us=a1x, them=a2x, season=a3x) |>
     setNames(c(paste(c("Roseville", team2), "Game Stats"), "Roseville Season Stats"))
 
   out <- list(Batting=list.batting, Pitching=list.pitching)
@@ -360,10 +360,10 @@ addDataList <- function(wb, sheet, x) {
                   tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
                   tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
   xdf <- x[sapply(x, is.data.frame)]
-  ws <- map(xdf, ~tibble(col=1:ncol(.), name=names(.))) %>% bind_rows() %>%
-    left_join(wx, by="name") %>% mutate(width=replace_na(width, w0),
-                                        width=if_else(stringr::str_detect(name, "Sum$"), 20, width)) %>%
-    group_by(col) %>% summarize(width=max(width), .groups="drop") %>% arrange(col)
+  ws <- map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
+    left_join(wx, by="name") |> mutate(width=replace_na(width, w0),
+                                        width=if_else(stringr::str_detect(name, "Sum$"), 20, width)) |>
+    group_by(col) |> summarize(width=max(width), .groups="drop") |> arrange(col)
   setColWidths(wb, sheet, cols = ws$col, widths = ws$width)
   wb
 }
@@ -384,10 +384,10 @@ toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$
   if(str_detect(file, "xlsx$")) {
     dimxl <- function(path, sheet) {
       x <- readxl::read_excel(path=path, sheet=sheet, col_names=FALSE)
-      dim(x) %>% setNames(c("rows", "cols"))
+      dim(x) |> setNames(c("rows", "cols"))
     }
     out <- drive_put(file, file.path(dir, newfile), type="spreadsheet")
-    dims <- tibble(sheet=readxl::excel_sheets(file)) %>%
+    dims <- tibble(sheet=readxl::excel_sheets(file)) |>
       mutate(map_dfr(sheet, dimxl, path=file))
     for(i in 1:nrow(dims)) {
       sheet_resize(out, sheet=dims$sheet[i],
