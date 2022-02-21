@@ -22,7 +22,12 @@ makedata <- function(d) {
     pmap_int(list(B2, B3, B4), f1)
   }
   get_Outcome <- function(Play, B1) {
-    if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
+    out <- if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
+    ## error check
+    if(!all(out %in% key$Outcome)) {
+      tmp <- out[! out %in% key$Outcome]
+      warning(paste(paste0("[",tmp,"]"), collapse=" "))
+    }
   }
   get_X <- function(Lineup, Inning) {
     tibble(Lineup=Lineup, Inning=Inning) |>
@@ -85,13 +90,6 @@ makedata <- function(d) {
            LastPitch=get_LastPitch(Pitcher, Inning)) |>
     ## move innings over as needed
     mutate(X=get_X(Lineup, Inning))
-
-
-  ## error check
-  tmp <- out$Outcome[! out$Outcome %in% key$Outcome]
-  if(!all(out$Outcome %in% key$Outcome)) {
-    warning(paste(paste0("[",tmp,"]"), collapse=" "))
-  }
   out
 }
 
