@@ -15,7 +15,14 @@ makedata <- function(d) {
     }
     out
   }
-  ## now process as needed
+  ## now process as needed, adding variables
+  ## Outcome to
+  ## out_during: if batter gets out later, during what at-bat did it happen?
+  ## pitch_batter: total pitches during at-bat
+  ## pitch_pitcher: pitches so far by this pitcher
+  ## lastpitch: TRUE/FALSE if is last batter for this pitcher
+  ## X: if need to bump column on scoresheet
+  ## whoout: who else got out during this at bat?
   out <- d %>%
     mutate(Outcome=if_else(!is.na(B1), B1, str_sub(Play, 1, 1))) %>%
     mutate(Outcome=str_replace(Outcome, "^E.*", "E")) %>%
