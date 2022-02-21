@@ -10,15 +10,6 @@
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
 
 
-
-pitch_count <- function(x) {
-  x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
-  bind_rows(
-    x |> group_by(Inning, Pitcher) |> summarize(N=sum(PitchesAtBat), .groups="drop"),
-    x |> group_by(Pitcher) |> summarize(N=sum(PitchesAtBat), .groups="drop") |> mutate(Inning=0)
-  ) |> mutate(Order=as.integer(Pitcher))
-}
-
 scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "two"), nthem=12) {
   pages <- match.arg(pages)
 
@@ -216,6 +207,13 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
 
   lower <- function(game) {
     if(!missing(game)) {
+      pitch_count <- function(x) {
+        x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
+        bind_rows(
+          x |> group_by(Inning, Pitcher) |> summarize(N=sum(PitchesAtBat), .groups="drop"),
+          x |> group_by(Pitcher) |> summarize(N=sum(PitchesAtBat), .groups="drop") |> mutate(Inning=0)
+        ) |> mutate(Order=as.integer(Pitcher))
+      }
       x1 <- pitch_count(game) |> mutate(N=as.character(N))
       x2 <- filter(x1, Inning==0) |> mutate(N=paste0("#", levels(Pitcher)),
                                              Inning=-1, Pitcher=NA)
