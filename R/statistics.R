@@ -64,7 +64,7 @@ makedata <- function(d) {
            OutDuring=get_OutDuring(B2, B3, B4),
            OutWho=get_OutWho(Lineup, Inning, OutDuring)) %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
-    mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0)) %>%
+    mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0L)) %>%
     mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) %>% ## really should use key for outcome...
     group_by(Pitcher, Inning) %>% mutate(pitch_pitcher=cumsum(pitch_batter),
                                  lastpitch=1:n()==n()) %>%
