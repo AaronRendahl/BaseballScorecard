@@ -82,7 +82,7 @@ makedata <- function(d) {
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) |>
     mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome),
            PitchesSoFar=get_PitchesSoFar(Pitcher, Inning, PitchesAtBat),
-           LastPitch=get_LastPitch(Pitcher, Inning))
+           LastPitch=get_LastPitch(Pitcher, Inning)) |>
     ## move innings over as needed
     mutate(X=get_X(Lineup, Inning))
 
