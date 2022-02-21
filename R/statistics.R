@@ -56,7 +56,7 @@ makedata <- function(d) {
     rowwise() %>%
     mutate(Outcome=get_Outcome(Play, B1),
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
-           OutDuring=get_OutDuring(B2, B3, B4)),
+           OutDuring=get_OutDuring(B2, B3, B4)) |>
     ungroup() %>%
     mutate(OutWho=get_OutWho(Lineup, Inning, OutDuring)) %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
