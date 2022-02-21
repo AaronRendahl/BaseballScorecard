@@ -15,8 +15,11 @@ makedata <- function(d) {
     }
     out
   }
+  toOutcome <- function(Play, B1) {
+    if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
+  }
   ## now process as needed, adding variables
-  ## Outcome to
+  ## Outcome: to match Outcome column in key
   ## out_during: if batter gets out later, during what at-bat did it happen?
   ## pitch_batter: total pitches during at-bat
   ## pitch_pitcher: pitches so far by this pitcher
@@ -24,10 +27,9 @@ makedata <- function(d) {
   ## X: if need to bump column on scoresheet
   ## whoout: who else got out during this at bat?
   out <- d %>%
-    mutate(Outcome=if_else(!is.na(B1), B1, str_sub(Play, 1, 1))) %>%
-    mutate(Outcome=str_replace(Outcome, "^E.*", "E")) %>%
     rowwise() %>%
-    mutate(to=tobase(Outcome, B1, B2, B3, B4),
+    mutate(Outcome=toOutcome(Play, B1),
+           to=tobase(Outcome, B1, B2, B3, B4),
            out_during=whoout(B2, B3, B4)) %>%
     ungroup() %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
