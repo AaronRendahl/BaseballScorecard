@@ -1,11 +1,11 @@
 makedata <- function(d) {
   ## helper function
-  tobase <- function(Outcome, B1, B2, B3, B4) {
+  get_ToBase <- function(Outcome, B1, B2, B3, B4) {
     B <- c("out", B1, B2, B3, B4)
     to1 <- max(which(!is.na(B))-1)
     max(key$Base[match(Outcome, key$Outcome)], to1) + stringr::str_detect(B[to1+1], "^X")*(-0.5)
   }
-  whoout <- function(B2, B3, B4) {
+  get_OutDuring <- function(B2, B3, B4) {
     out <- NA
     B <- c(B2, B3, B4)
     X <- stringr::str_subset(B, "^X")
@@ -20,7 +20,8 @@ makedata <- function(d) {
   }
   ## now process as needed, adding variables
   ## Outcome: to match Outcome column in key
-  ## out_during: if batter gets out later, during what at-bat did it happen?
+  ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
+  ## OutDuring: if batter gets out later, during what at-bat did it happen?
   ## pitch_batter: total pitches during at-bat
   ## pitch_pitcher: pitches so far by this pitcher
   ## lastpitch: TRUE/FALSE if is last batter for this pitcher
@@ -28,9 +29,9 @@ makedata <- function(d) {
   ## whoout: who else got out during this at bat?
   out <- d %>%
     rowwise() %>%
-    mutate(Outcome=toOutcome(Play, B1),
-           to=tobase(Outcome, B1, B2, B3, B4),
-           out_during=whoout(B2, B3, B4)) %>%
+    mutate(Outcome=get_Outcome(Play, B1),
+           ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
+           OutDuring=get_OutDuring(B2, B3, B4)) %>%
     ungroup() %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
     mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0)) %>%
@@ -49,12 +50,12 @@ makedata <- function(d) {
     # group_by(Inning) %>% mutate(X=(1:n()-1) %/% X, X=X-lag(X, default=0)) %>%
     # ungroup() %>% mutate(X=cumsum(X))
   out <- out %>% mutate(whoout=NA, idx=1:n())
-  tmp <- out %>% filter(!is.na(out_during))
+  tmp <- out %>% filter(!is.na(OutDuring))
   for(i in seq_len(nrow(tmp))) {
-    if(tmp$out_during[i]==0) {
+    if(tmp$OutDuring[i]==0) {
       out$whoout[tmp$idx[i]] <- 0
     } else {
-      foo <- filter(out, Lineup==tmp$out_during[i] & idx >= tmp$idx[i] & Inning==tmp$Inning[i])
+      foo <- filter(out, Lineup==tmp$OutDuring[i] & idx >= tmp$idx[i] & Inning==tmp$Inning[i])
       stopifnot(nrow(foo)>0)
       out$whoout[foo$idx[1]] <- tmp$Lineup[i]
     }
@@ -95,11 +96,11 @@ batter_stats <- function(game, who=c("away", "home"), teamname=TRUE) {
     x <- x %>% left_join(select(rr[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
-    d %>% select(Lineup, Outcome, to) %>% left_join(key, by="Outcome") %>%
+    d %>% select(Lineup, Outcome, ToBase) %>% left_join(key, by="Outcome") %>%
       group_by(Lineup) %>% summarize(
         G=NA,
         PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), BA=NA,
-        R=sum(to==4), Blank=NA,
+        R=sum(ToBase==4), Blank=NA,
         K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
         ROE=sum(Outcome=="E"),
         `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
@@ -194,8 +195,8 @@ all_stats <- function(games, team) {
 }
 
 get_score <- function(game) {
-  a1 <- game$away %>% group_by(Inning) %>% summarize(R=sum(to==4), .groups="drop") %>% rename(away="R")
-  a2 <- game$home %>% group_by(Inning) %>% summarize(R=sum(to==4), .groups="drop") %>% rename(home="R")
+  a1 <- game$away %>% group_by(Inning) %>% summarize(R=sum(ToBase==4), .groups="drop") %>% rename(away="R")
+  a2 <- game$home %>% group_by(Inning) %>% summarize(R=sum(ToBase==4), .groups="drop") %>% rename(home="R")
   Final <- c(sum(a1$away), sum(a2$home))
   out <- full_join(a1, a2, by="Inning") %>% as.data.frame()
   rownames(out) <- out$Inning

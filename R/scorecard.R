@@ -42,7 +42,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
   runslashcolor <- "black"
   pitchtextcolor <- "gray20"
 
-  makebox <- function(to=NA, count=c(0,0), pitchcount=NA, lastpitch=FALSE,
+  makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, lastpitch=FALSE,
                       out=NA, bybase, play=NA, basesize=0.13, top=FALSE) {
     basesize <- unit(basesize, "inches")
     pitchsize <- unit(0.1,"inches")
@@ -78,24 +78,24 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
     }
     xs <- basex + c(0,1,0,-1,0)*basesize
     ys <- unit(1,"npc") - basey + c(-1,0,1,0,-1)*basesize
-    bases <- if(!is.na(to)) { NULL } else {
+    bases <- if(!is.na(ToBase)) { NULL } else {
       pointsGrob(x=xs[1:4],
                  y=ys[1:4],
                  pch=19, size=unit(0.25, "pt"), gp=gpar(col=basedotcolor))
     }
-    lines <- if(is.na(to)) { NULL } else {
-      ex <- to - floor(to+0.01)  ## add 0.01, caution about floating point
-      to <- floor(to+0.01)
-      xx <- xs[seq_len(to+1)]
-      yy <- ys[seq_len(to+1)]
+    lines <- if(is.na(ToBase)) { NULL } else {
+      ex <- to - floor(ToBase+0.01)  ## add 0.01, caution about floating point
+      to <- floor(ToBase+0.01)
+      xx <- xs[seq_len(ToBase+1)]
+      yy <- ys[seq_len(ToBase+1)]
       outbar <- NULL
       if(ex > 0.1) {
-        #xs2 <- basex + 0.5*c(1,-1,-1)[to]*basesize
-        #ys2 <- unit(1,"npc") - basey + 0.5*c(1,1,-1)[to]*basesize
-        xs2 <- basex + c(0.25,-.75,-.25)[to]*basesize
-        ys2 <- unit(1,"npc") - basey + c(.75,.25,-.75)[to]*basesize
-        xa <- xs2 + c(-1,1,1)[to] * c(-1,1) * 0.2*basesize
-        ya <- ys2 + c(-1,-1,1)[to] * c(-1,1) * 0.2*basesize
+        #xs2 <- basex + 0.5*c(1,-1,-1)[ToBase]*basesize
+        #ys2 <- unit(1,"npc") - basey + 0.5*c(1,1,-1)[ToBase]*basesize
+        xs2 <- basex + c(0.25,-.75,-.25)[ToBase]*basesize
+        ys2 <- unit(1,"npc") - basey + c(.75,.25,-.75)[ToBase]*basesize
+        xa <- xs2 + c(-1,1,1)[ToBase] * c(-1,1) * 0.2*basesize
+        ya <- ys2 + c(-1,-1,1)[ToBase] * c(-1,1) * 0.2*basesize
         outbar <- linesGrob(x=xa, y=ya, gp=gpar(lwd=2))
         xx <- unit.c(xx, xs2)
         yy <- unit.c(yy, ys2)
@@ -104,7 +104,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
             outbar)
 
     }
-    fill <- if(!is.na(to) & to==4) {
+    fill <- if(!is.na(ToBase) & ToBase==4) {
       polygonGrob(x=xs, y=ys, gp=gpar(fill="gray50"))
     } else { NULL }
     sh <- segmentsGrob(x0=basex,
@@ -133,7 +133,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
             circleGrob(x=xx, y=yy, r=xx*0.85))
     } else { NULL }
     play <- if(is.na(play)) { NULL } else {
-      if(to==0) {
+      if(ToBase==0) {
         textGrob(play, basex, unit(1,"npc") - basey)
       } else {
         textGrob(play, unit(1, "npc"), unit(1,"npc") - basey,
@@ -357,7 +357,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
       d <- d %>% group_by(Inning) %>% mutate(top=(1:n()==1)) %>%
         rowwise() %>%
         mutate(box=list(
-          makebox(to=to, count=c(Balls, Strikes, Fouls),
+          makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
                   pitchcount=c(pitch_batter, pitch_pitcher), lastpitch=lastpitch,
                   play=Play, bybase=c(B1, B2, B3, B4),
                   out=Out, basesize=basesize, top=top)
