@@ -1,3 +1,16 @@
+## ## variables needed from Game file:
+## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
+##
+## ## computed when read in:
+## ToBase, PitchesAtBat
+##
+## ## computed in this file:
+## X: if extra column needed for an inning
+## PitchesSoFar: pitches so far by this pitcher
+## LastPitch: TRUE/FALSE if is last batter for this pitcher
+
+
+
 pitch_count <- function(x) {
   x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
   bind_rows(
@@ -354,7 +367,18 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
       }
     } else {
       # make the graphics...
-      d <- d |> group_by(Inning) |> mutate(top=(1:n()==1)) |>
+      get_X <- function(Lineup, Inning) {
+        tibble(Lineup=Lineup, Inning=Inning) |>
+          group_by(Lineup, Inning) |> mutate(X=1:n()) |>
+          group_by(Inning) |> mutate(X=cummax(X) - 1) |>
+          nest() |> ungroup() |>
+          mutate(X3=purrr::map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
+          unnest(data) |> mutate(X=X+X4) |> select(-X3, -X4) |>
+          ungroup() |> pull(X)
+      }
+      d <- d |> mutate(X=get_X(Lineup, Inning)) |>
+        group_by(Pitcher, Inning) |> mutate(PitchesSoFar=cumsum(PitchesAtBat), LastPitch=1:n()==n()) |>
+        group_by(Inning) |> mutate(top=(1:n()==1)) |>
         rowwise() |>
         mutate(box=list(
           makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),

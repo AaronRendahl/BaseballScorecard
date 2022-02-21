@@ -30,15 +30,6 @@ makedata <- function(d) {
     }
     out
   }
-  get_X <- function(Lineup, Inning) {
-    tibble(Lineup=Lineup, Inning=Inning) |>
-      group_by(Lineup, Inning) |> mutate(X=1:n()) |>
-      group_by(Inning) |> mutate(X=cummax(X) - 1) |>
-      nest() |> ungroup() |>
-      mutate(X3=purrr::map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
-      unnest(data) |> mutate(X=X+X4) |> select(-X3, -X4) |>
-      ungroup() |> pull(X)
-  }
   get_RunnersOut <- function(Lineup, Inning, OutDuring) {
     out <- tibble(Lineup=Lineup, Inning=Inning, OutDuring=OutDuring)
     out <- out |> mutate(RunnersOut=0, idx=1:n())
@@ -57,40 +48,21 @@ makedata <- function(d) {
   get_PitchesAtBat <- function(Count, Outcome) {
     Count + (key$Pitch[match(Outcome, key$Outcome)]!="No Pitch")*1L
   }
-  get_PitchesSoFar <- function(Pitcher, Inning, PitchesAtBat) {
-    tibble(Pitcher=Pitcher, Inning=Inning, PitchesAtBat=PitchesAtBat) |>
-      group_by(Pitcher, Inning) |>
-      mutate(PitchesSoFar=cumsum(PitchesAtBat)) |>
-      pull(PitchesSoFar)
-  }
-  get_LastPitch <- function(Pitcher, Inning) {
-    tibble(Pitcher=Pitcher, Inning=Inning) |>
-      group_by(Pitcher, Inning) |>
-      mutate(LastPitch=1:n()==n()) |>
-      pull(LastPitch)
-  }
+
   ## now process as needed, adding variables
   ## Outcome: to match Outcome column in key
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
   ## OutDuring: if batter gets out later, during what at-bat did it happen?
   ## RunnersOut: how many runners got out during this at bat?
   ## PitchesAtBat: total pitches during at-bat
-  ## PitchesSoFar: pitches so far by this pitcher
-  ## LastPitch: TRUE/FALSE if is last batter for this pitcher
-  ## X: if need to bump column on scoresheet
-  out <- d |>
+  d |>
     mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0L)) |>
     mutate(Outcome=get_Outcome(Play, B1),
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
            OutDuring=get_OutDuring(B2, B3, B4),
            RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring)) |>
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) |>
-    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome),
-           PitchesSoFar=get_PitchesSoFar(Pitcher, Inning, PitchesAtBat),
-           LastPitch=get_LastPitch(Pitcher, Inning)) |>
-    ## move innings over as needed
-    mutate(X=get_X(Lineup, Inning))
-  out
+    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome))
 }
 
 ## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
