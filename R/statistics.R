@@ -1,19 +1,25 @@
 makedata <- function(d) {
   ## helper function
   get_ToBase <- function(Outcome, B1, B2, B3, B4) {
-    B <- c("out", B1, B2, B3, B4)
-    to1 <- max(which(!is.na(B))-1)
-    max(key$Base[match(Outcome, key$Outcome)], to1) + stringr::str_detect(B[to1+1], "^X")*(-0.5)
+    f1 <- function(Outcome, B1, B2, B3, B4) {
+      B <- c("out", B1, B2, B3, B4)
+      to1 <- max(which(!is.na(B))-1)
+      max(key$Base[match(Outcome, key$Outcome)], to1) + stringr::str_detect(B[to1+1], "^X")*(-0.5)
+    }
+    pmap_dbl(list(Outcome, B1, B2, B3, B4), f1)
   }
   get_OutDuring <- function(B2, B3, B4) {
-    out <- NA
-    B <- c(B2, B3, B4)
-    X <- stringr::str_subset(B, "^X")
-    if(length(X) > 0) {
-      out <- str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") %>%
-        as.numeric() %>% replace_na(0)
+    f1 <- function(B2, B3, B4) {
+      out <- NA
+      B <- c(B2, B3, B4)
+      X <- stringr::str_subset(B, "^X")
+      if(length(X) > 0) {
+        out <- str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") %>%
+          as.integer() %>% replace_na(0L)
+      }
+      out
     }
-    out
+    pmap_int(list(B2, B3, B4), f1)
   }
   get_Outcome <- function(Play, B1) {
     if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
@@ -41,7 +47,7 @@ makedata <- function(d) {
       }
     }
     out <- out %>% select(-idx)
-    pull(out, outWho)
+    pull(out, OutWho)
   }
   ## now process as needed, adding variables
   ## Outcome: to match Outcome column in key
@@ -53,12 +59,10 @@ makedata <- function(d) {
   ## lastpitch: TRUE/FALSE if is last batter for this pitcher
   ## X: if need to bump column on scoresheet
   out <- d %>%
-    mutate(Outcome=get_Outcome(Play, B1)) |>
-    rowwise() %>%
-    mutate(ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
-           OutDuring=get_OutDuring(B2, B3, B4)) |>
-    ungroup() %>%
-    mutate(OutWho=get_OutWho(Lineup, Inning, OutDuring)) %>%
+    mutate(Outcome=get_Outcome(Play, B1),
+           ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
+           OutDuring=get_OutDuring(B2, B3, B4),
+           OutWho=get_OutWho(Lineup, Inning, OutDuring)) %>%
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) %>%
     mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0)) %>%
     mutate(pitch_batter=Balls+Strikes+Fouls+(Outcome!="_")*1L) %>% ## really should use key for outcome...
