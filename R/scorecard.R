@@ -84,7 +84,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
                  pch=19, size=unit(0.25, "pt"), gp=gpar(col=basedotcolor))
     }
     lines <- if(is.na(ToBase)) { NULL } else {
-      ex <- to - floor(ToBase+0.01)  ## add 0.01, caution about floating point
+      ex <- ToBase - floor(ToBase+0.01)  ## add 0.01, caution about floating point
       to <- floor(ToBase+0.01)
       xx <- xs[seq_len(ToBase+1)]
       yy <- ys[seq_len(ToBase+1)]
