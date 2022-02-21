@@ -79,7 +79,7 @@ getIP <- function(x) {
   a + b/10
 }
 ## BATTER STATS
-batter_stats <- function(game, who=c("away", "home"), teamname=TRUE) {
+batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
   who <- match.arg(who)
   i <- match(who, c("away", "home"))
   x <- game$lineup[c(1,i+1)]
@@ -87,8 +87,8 @@ batter_stats <- function(game, who=c("away", "home"), teamname=TRUE) {
   team <- colnames(x)[2]
   teamname <- if(teamname) team else "Team"
   names(x)[2] <- "Number"
-  if(team %in% names(rr)) {
-    x <- x |> left_join(select(rr[[team]], c(Number, Name)), by="Number")
+  if(team %in% names(rosters)) {
+    x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
     d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
@@ -110,15 +110,15 @@ batter_stats <- function(game, who=c("away", "home"), teamname=TRUE) {
 }
 
 ## PITCHER STATS
-pitcher_stats <- function(game, who=c("away", "home")) {
+pitcher_stats <- function(game, rosters, who=c("away", "home")) {
   who <- match.arg(who)
   i <- match(who, c("away", "home"))
   x <- game$lineup[c(1,i+1)]
   d <- game[[setdiff(c("home", "away"), who)]]
   team <- colnames(x)[2]
   names(x)[2] <- "Number"
-  if(team %in% names(rr)) {
-    x <- x |> left_join(select(rr[[team]], c(Number, Name)), by="Number")
+  if(team %in% names(rosters)) {
+    x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
     d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, RunnersOut) |> left_join(key, by="Outcome") |>
@@ -161,17 +161,17 @@ readrosters <- function(file) {
   lapply(ss, readxl::read_excel, path=file) |> setNames(ss)
 }
 
-all_stats <- function(games, team) {
-  both_stats <- function(game, team) {
+all_stats <- function(games, rosters, team) {
+  both_stats <- function(game, rosters, team) {
     k <- match(team, colnames(game$lineup))
     if(!is.na(k)) {
-      list(batter=batter_stats(game, c("away", "home")[k-1], teamname=FALSE),
-           pitcher=pitcher_stats(game, c("away", "home")[k-1]))
+      list(batter=batter_stats(game, rosters, c("away", "home")[k-1], teamname=FALSE),
+           pitcher=pitcher_stats(game, rosters, c("away", "home")[k-1]))
     } else {
       NULL
     }
   }
-  ss <- lapply(games, both_stats, team)
+  ss <- lapply(games, both_stats, rosters=rosters, team=team)
   b.all <- bind_rows(lapply(ss, function(x) x$batter)) |>
     group_by(Number, Name) |> mutate(G=n()) |> ungroup() |>
     mutate(Lineup=NA) |> pivot_longer(-c(Lineup, Number, Name, G)) |>
@@ -200,16 +200,16 @@ get_score <- function(game) {
   out |> as.matrix() |> t() |> cbind(R=Final)
 }
 
-game_stats <- function(game) {
+game_stats <- function(game, rosters) {
   list(about=setNames(list(game$about, colnames(game$lineup)[2], colnames(game$lineup)[3]),
                       c("about", "away", "home")),
-       home=list(Batting=batter_stats(game, "home"),
-                 Pitching=pitcher_stats(game, "home")),
-       away=list(Batting=batter_stats(game, "away"),
-                 Pitching=pitcher_stats(game, "away")))
+       home=list(Batting=batter_stats(game, rosters, "home"),
+                 Pitching=pitcher_stats(game, rosters, "home")),
+       away=list(Batting=batter_stats(game, rosters, "away"),
+                 Pitching=pitcher_stats(game, rosters, "away")))
 }
 
-makestatsfile <- function(games, team, filename) {
+makestatsfile <- function(games, rosters, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
     if(!missing(title)) {
@@ -221,8 +221,8 @@ makestatsfile <- function(games, team, filename) {
 
   game <- games[[length(games)]]
 
-  game_stats <- game_stats(game)
-  all_stats <- all_stats(games, team)
+  game_stats <- game_stats(game, rosters)
+  all_stats <- all_stats(games, rosters, team)
 
   about <- game_stats$about$about
   k_us <- match(team, colnames(game$lineup)[2:3])
