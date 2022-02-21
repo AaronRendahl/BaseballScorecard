@@ -10,4 +10,4 @@ Encoding: UTF-8
 LazyData: true
 Imports: tidyverse, grid, openxlsx, googledrive, googlesheets4
 Depends: 
-    R (>= 2.10)
+    R (>= 4.1)
