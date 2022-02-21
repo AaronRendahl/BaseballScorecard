@@ -15,7 +15,7 @@ makedata <- function(d) {
     }
     out
   }
-  toOutcome <- function(Play, B1) {
+  get_Outcome <- function(Play, B1) {
     if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
   }
   ## now process as needed, adding variables
