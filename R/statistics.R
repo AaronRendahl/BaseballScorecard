@@ -6,7 +6,7 @@ makedata <- function(d) {
       to1 <- max(which(!is.na(B))-1)
       max(key$Base[match(Outcome, key$Outcome)], to1) + stringr::str_detect(B[to1+1], "^X")*(-0.5)
     }
-    pmap_dbl(list(Outcome, B1, B2, B3, B4), f1)
+    purrr::pmap_dbl(list(Outcome, B1, B2, B3, B4), f1)
   }
   get_OutDuring <- function(B2, B3, B4) {
     f1 <- function(B2, B3, B4) {
@@ -14,51 +14,51 @@ makedata <- function(d) {
       B <- c(B2, B3, B4)
       X <- stringr::str_subset(B, "^X")
       if(length(X) > 0) {
-        out <- str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") |>
+        out <- stringr::str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") |>
           as.integer() |> replace_na(0L)
       }
       out
     }
-    pmap_int(list(B2, B3, B4), f1)
+    purrr::pmap_int(list(B2, B3, B4), f1)
   }
   get_Outcome <- function(Play, B1) {
-    out <- if_else(!is.na(B1), B1, str_sub(Play, 1, 1)) |> str_replace("^E.*", "E")
+    out <- if_else(!is.na(B1), B1, stringr::str_sub(Play, 1, 1)) |> stringr::str_replace("^E.*", "E")
     ## error check
     if(!all(out %in% key$Outcome)) {
       tmp <- out[! out %in% key$Outcome]
       warning(paste(paste0("[",tmp,"]"), collapse=" "))
     }
+    out
   }
   get_X <- function(Lineup, Inning) {
     tibble(Lineup=Lineup, Inning=Inning) |>
       group_by(Lineup, Inning) |> mutate(X=1:n()) |>
       group_by(Inning) |> mutate(X=cummax(X) - 1) |>
       nest() |> ungroup() |>
-      mutate(X3=map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
+      mutate(X3=purrr::map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
       unnest(data) |> mutate(X=X+X4) |> select(-X3, -X4) |>
       ungroup() |> pull(X)
   }
-  get_OutWho <- function(Lineup, Inning, OutDuring) {
+  get_RunnersOut <- function(Lineup, Inning, OutDuring) {
     out <- tibble(Lineup=Lineup, Inning=Inning, OutDuring=OutDuring)
-    out <- out |> mutate(OutWho=NA, idx=1:n())
+    out <- out |> mutate(RunnersOut=0, idx=1:n())
     tmp <- out |> filter(!is.na(OutDuring))
     for(i in seq_len(nrow(tmp))) {
       if(tmp$OutDuring[i]==0) {
-        out$OutWho[tmp$idx[i]] <- 0
+        out$RunnersOut[tmp$idx[i]] <- out$RunnersOut[tmp$idx[i]] + 1
       } else {
         foo <- filter(out, Lineup==tmp$OutDuring[i] & idx >= tmp$idx[i] & Inning==tmp$Inning[i])
         stopifnot(nrow(foo)>0)
-        out$OutWho[foo$idx[1]] <- tmp$Lineup[i]
+        out$RunnersOut[foo$idx[1]] <- out$RunnersOut[foo$idx[1]] + 1
       }
     }
-    out <- out |> select(-idx)
-    pull(out, OutWho)
+    pull(out, RunnersOut)
   }
   get_PitchesAtBat <- function(Count, Outcome) {
-    Count + (key$Pitch[match(tmp, key$Outcome)]!="No Pitch")*1L
+    Count + (key$Pitch[match(Outcome, key$Outcome)]!="No Pitch")*1L
   }
   get_PitchesSoFar <- function(Pitcher, Inning, PitchesAtBat) {
-    tibble(Pitcher=Pitcher, Inning=Inning) |>
+    tibble(Pitcher=Pitcher, Inning=Inning, PitchesAtBat=PitchesAtBat) |>
       group_by(Pitcher, Inning) |>
       mutate(PitchesSoFar=cumsum(PitchesAtBat)) |>
       pull(PitchesSoFar)
@@ -73,7 +73,7 @@ makedata <- function(d) {
   ## Outcome: to match Outcome column in key
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
   ## OutDuring: if batter gets out later, during what at-bat did it happen?
-  ## OutWho: who else got out during this at bat?
+  ## RunnersOut: how many runners got out during this at bat?
   ## PitchesAtBat: total pitches during at-bat
   ## PitchesSoFar: pitches so far by this pitcher
   ## LastPitch: TRUE/FALSE if is last batter for this pitcher
@@ -83,7 +83,7 @@ makedata <- function(d) {
     mutate(Outcome=get_Outcome(Play, B1),
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
            OutDuring=get_OutDuring(B2, B3, B4),
-           OutWho=get_OutWho(Lineup, Inning, OutDuring)) |>
+           RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring)) |>
     mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) |>
     mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome),
            PitchesSoFar=get_PitchesSoFar(Pitcher, Inning, PitchesAtBat),
@@ -149,10 +149,10 @@ pitcher_stats <- function(game, who=c("away", "home")) {
     x <- x |> left_join(select(rr[[team]], c(Number, Name)), by="Number")
   }
   ff <- function(d) {
-    d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, OutWho) |> left_join(key, by="Outcome") |>
-      mutate(Out=Out+!is.na(OutWho)) |> select(-OutWho) |> ## NEED TO FIX FOR BATTER, NOT PLAYER!!
-      mutate(Strikes=Strikes+(Pitch=="Strike"), Balls=Balls+(Pitch=="Ball")) |>
-      mutate(Order=as.integer(as_factor(paste(Pitcher)))) |>
+    d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, RunnersOut) |> left_join(key, by="Outcome") |>
+      mutate(Out = Out + RunnersOut) |> select(-RunnersOut) |>
+      mutate(Strikes = Strikes + (Pitch == "Strike"), Balls = Balls + (Pitch == "Ball")) |>
+      mutate(Order = as.integer(as_factor(paste(Pitcher)))) |>
       group_by(Order, Pitcher) |> summarize(
         G=NA,IP=NA,
         Outs=sum(Out), BF=sum(Outcome!="_"),
@@ -175,7 +175,7 @@ readgame <- function(file) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
-  when <- tmp[[1]] |> str_replace("([ap])$", "\\1m")
+  when <- tmp[[1]] |> stringr::str_replace("([ap])$", "\\1m")
   about <- if(ncol(tmp) > 1) tmp[[2]] else "GSBL"
   g1 <- readxl::read_excel(file, "Lineup", skip=1)
   stopifnot(names(g1)[2:3] %in% ss[2:3])
@@ -344,7 +344,7 @@ addDataList <- function(wb, sheet, x) {
         link <- xi$scorecard_link
         xi$scorecard_link <- NULL
       }
-      kk <- which(map_lgl(xi, ~all(is.na(.))))
+      kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
       xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
       names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i])
@@ -372,7 +372,7 @@ addDataList <- function(wb, sheet, x) {
                   tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
                   tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
   xdf <- x[sapply(x, is.data.frame)]
-  ws <- map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
+  ws <- purrr::map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
     left_join(wx, by="name") |> mutate(width=replace_na(width, w0),
                                         width=if_else(stringr::str_detect(name, "Sum$"), 20, width)) |>
     group_by(col) |> summarize(width=max(width), .groups="drop") |> arrange(col)
@@ -400,7 +400,7 @@ toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$
     }
     out <- drive_put(file, file.path(dir, newfile), type="spreadsheet")
     dims <- tibble(sheet=readxl::excel_sheets(file)) |>
-      mutate(map_dfr(sheet, dimxl, path=file))
+      mutate(purrr::map_dfr(sheet, dimxl, path=file))
     for(i in 1:nrow(dims)) {
       sheet_resize(out, sheet=dims$sheet[i],
                    nrow=dims$rows[i]+1, ncol=dims$cols[i]+1, exact=TRUE)

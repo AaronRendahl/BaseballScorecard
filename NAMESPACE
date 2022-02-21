@@ -1,2 +1,4 @@
 exportPattern("^[[:alpha:]]+")
 import(grid)
+import(dplyr)
+import(tidyr)
