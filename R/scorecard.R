@@ -10,7 +10,9 @@
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
 
 
-scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "two"), nthem=12) {
+scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
+                      pages=c("one", "two"), nthem=12,
+                      team_name="Roseville") {
   pages <- match.arg(pages)
 
   page.width <- 8.5
@@ -229,7 +231,55 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
                       row=1, col=1)
       #gf <- placeGrob(gf, rectGrob(), row=1, col=1)
       return(gf)
+    } else {
+      npitchers <- 6
+      pwidth <- 0.5
+      heights2 <- c(0.2,rep(1/npitchers, npitchers),0.2)
+      leftcols <- left.width * c(.5, .4, .1)
+      nleftcols <- length(leftcols)
+      widths2 <- c(leftcols, rep(main.width*pwidth/ncol, ncol), main.width*(1-pwidth))
+      lx2 <- grid.layout(ncol=length(widths2),
+                         nrow=length(heights2),
+                         heights=heights2,
+                         widths=widths2)
+      gf2 <- frameGrob(layout=lx2)
+      gf2 <- placeGrob(gf2,
+                       textGrob("Pitcher", x=0, just="left", gp=gpar(fontsize=inningtextsize)),
+                       row=1, col=1)
+      gf2 <- placeGrob(gf2,
+                       textGrob("Total", x=0.5, just="center", gp=gpar(fontsize=inningtextsize)),
+                       row=1, col=2)
+      for(i in 1:npitchers) {
+        gf2 <- placeGrob(gf2,
+                         textGrob("#", x=0.05, just="left", gp=gpar(fontsize=leftlabelsize, col=numbercolor)),
+                         row=i+1, col=1)
+        box <- rectGrob(gp=gpar(lwd=0.5))
+        gf2 <- placeGrob(gf2, box, row=i+1, col=1)
+        gf2 <- placeGrob(gf2, box, row=i+1, col=2)
+      }
+      for(i in 1:ncol) for(j in 1:npitchers) {
+        box <- rectGrob(gp=gpar(lwd=0.5))
+        gf2 <- placeGrob(gf2, box, row=j+1, col=nleftcols+i)
+      }
+      for(i in 1:6) {
+        gf2 <- placeGrob(gf2, row=1, col=nleftcols+i,
+                         grob=textGrob(i, y=unit(3, "pt"), just="bottom",
+                                       gp=gpar(fontsize=inningtextsize)))
+      }
+      xx1 <- textGrob("11U Max Pitch Count: 85 or 2 innings (whichever first)",
+                      x=0, y=0.9,  just=c("left","top"),
+                      gp=gpar(fontsize=pitchtextsize, col=pitchtextcolor))
+      xx2 <- textGrob(paste("Pitch Count: Rest Days", "1-20: 0", "21-40: 1", "41-55: 2", "56-66: 3", "67+: 4",
+                            sep=paste(rep(" ",4), collapse="")),
+                      x=1, y=0.9,  just=c("right","top"),
+                      gp=gpar(fontsize=pitchtextsize, col=pitchtextcolor))
+      gf2 <- placeGrob(gf2, xx1, row=length(heights2), col=nleftcols + 1)
+      gf2 <- placeGrob(gf2, xx2, row=length(heights2), col=nleftcols + ncol + 1)
+      return(gf2)
     }
+  }
+  ## plots runs/total and pitcher #: count
+  lower.orig <- function() {
     # heights2 <- c(0.5,0.75,0.25,0.5,0.5,0.5)
     heights2 <- c(0.25,0.4,0.4,0.25)
     lx2 <- grid.layout(ncol=ncol+1, nrow=length(heights2),
@@ -238,12 +288,6 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
     gf2 <- placeGrob(gf2,
                      textGrob("Runs / Total", x=0.95, just="right", gp=gpar(fontsize=leftlabelsize)),
                      row=2, col=1)
-    # gf2 <- placeGrob(gf2,
-    #                  textGrob("Pitcher #", x=0.95, just="right", gp=gpar(fontsize=leftlabelsize)),
-    #                  row=4, col=1)
-    # gf2 <- placeGrob(gf2,
-    #                  textGrob("Pitch Count", x=0.95, just="right", gp=gpar(fontsize=leftlabelsize)),
-    #                  row=5, col=1)
     gf2 <- placeGrob(gf2,
                      textGrob("Pitcher #: Count", x=0.95, just="right", gp=gpar(fontsize=leftlabelsize)),
                      row=3, col=1)
@@ -331,7 +375,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
     name <- if(!is.na(team) && team=="Roseville") {
         logo <- rasterGrob(Roseville_Logo, x=0, y=1, height=0.9,
                            just=c("left", "top"))
-        rose <- textGrob("Roseville Raiders 10/11 Fall 2021",
+        rose <- textGrob(team_name,
                          x=unit(1,"snpc"),
                          y=0.55,
                          just=c("left", "center"),
@@ -460,6 +504,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf", pages=c("one", "
   }
 
   on.exit(dev.off())
+  message(pages)
   if(pages=="one") {
     pdf(file, width=page.width*2, height=page.height)
     gf <- frameGrob(layout=grid.layout(ncol=2))
