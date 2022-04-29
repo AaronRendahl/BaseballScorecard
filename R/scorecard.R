@@ -27,7 +27,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   footer.height <- 1.5 # was 1 for blanks
   main.height <- page.height - (margin.top + margin.bottom + header.height + footer.height)
 
-  pitchsize <- 0.1
+  pitchsize <- 0.11
 
   pitchtextsize <- 8
   headertextsize <- 10
@@ -53,7 +53,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
     basesize <- unit(basesize, "inches")
     pitchsize <- unit(0.1,"inches")
     basex <- unit(0.55, "npc")
-    basey <- unit(0.55, "npc")
+    basey <- unit(0.5, "npc")
     xs <- (c(1,2,3,1,2)-1)*pitchsize
     ys <- unit(1, "npc") - (c(1,1,1,2,2)-1)*pitchsize
     pitchboxes <- do.call(gList, mapply(function(x, y) {
@@ -112,9 +112,10 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
     fill <- if(!is.na(ToBase) & ToBase==4) {
       polygonGrob(x=xs, y=ys, gp=gpar(fill="gray50"))
     } else { NULL }
-    sh <- segmentsGrob(x0=basex,
-                       x1=basex + pitchsize*0.75,
-                       y0=unit(1, "npc") - pitchsize*2,
+    # slash for pitches atbat/total
+    sh <- segmentsGrob(x0=unit(0.5, "npc") + pitchsize*1.5 - pitchsize*3/16*1.5,
+                       x1=unit(0.5, "npc") + pitchsize*1.5 + pitchsize*3/16*1.5,
+                       y0=unit(1, "npc") - pitchsize*1.5, # how tall is slash
                        y1=unit(1, "npc"),
                        gp=gpar(col=pitchslashcolor, lwd=0.25))
     pitchnum <- if(any(is.na(pitchcount))) { NULL } else {
@@ -164,7 +165,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       )
     }
     action <- segmentsGrob(x0=unit(0.25, "npc"),
-                           x1=unit(0.75, "npc"),
+                           x1=unit(1, "npc"),
                            y0=unit(0.2, "npc"),
                            y1=unit(0.2, "npc"),
                            gp=gpar(col=pitchslashcolor, lwd=0.25))
