@@ -12,7 +12,7 @@
 
 scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                       pages=c("one", "two"), nthem=12,
-                      team_name="Roseville") {
+                      team_name="Roseville", pitcher_rest="") {
   pages <- match.arg(pages)
 
   page.width <- 8.5
@@ -108,7 +108,6 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       }
       gList(linesGrob(x=xx, y=yy, gp=gpar(col="black")),
             outbar)
-
     }
     fill <- if(!is.na(ToBase) & ToBase==4) {
       polygonGrob(x=xs, y=ys, gp=gpar(fill="gray50"))
@@ -233,21 +232,24 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       return(gf)
     } else {
       npitchers <- 6
-      pwidth <- 0.5
+      pwidth <- 3/8
       heights2 <- c(0.2,rep(1/npitchers, npitchers),0.2)
       leftcols <- left.width * c(.5, .4, .1)
       nleftcols <- length(leftcols)
-      widths2 <- c(leftcols, rep(main.width*pwidth/ncol, ncol), main.width*(1-pwidth))
+      npinnings <- 6
+      widths2 <- c(leftcols, rep(main.width*pwidth/npinnings, npinnings), main.width*(1-pwidth))
       lx2 <- grid.layout(ncol=length(widths2),
                          nrow=length(heights2),
                          heights=heights2,
                          widths=widths2)
       gf2 <- frameGrob(layout=lx2)
       gf2 <- placeGrob(gf2,
-                       textGrob("Pitcher", x=0, just="left", gp=gpar(fontsize=inningtextsize)),
+                       textGrob("Pitcher", x=0, y=unit(3, "pt"), just=c("left", "bottom"),
+                                gp=gpar(fontsize=inningtextsize)),
                        row=1, col=1)
       gf2 <- placeGrob(gf2,
-                       textGrob("Total", x=0.5, just="center", gp=gpar(fontsize=inningtextsize)),
+                       textGrob("Total", x=0.5, y=unit(3, "pt"), just="bottom",
+                                gp=gpar(fontsize=inningtextsize)),
                        row=1, col=2)
       for(i in 1:npitchers) {
         gf2 <- placeGrob(gf2,
@@ -257,7 +259,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
         gf2 <- placeGrob(gf2, box, row=i+1, col=1)
         gf2 <- placeGrob(gf2, box, row=i+1, col=2)
       }
-      for(i in 1:ncol) for(j in 1:npitchers) {
+      for(i in 1:npinnings) for(j in 1:npitchers) {
         box <- rectGrob(gp=gpar(lwd=0.5))
         gf2 <- placeGrob(gf2, box, row=j+1, col=nleftcols+i)
       }
@@ -266,15 +268,11 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                          grob=textGrob(i, y=unit(3, "pt"), just="bottom",
                                        gp=gpar(fontsize=inningtextsize)))
       }
-      xx1 <- textGrob("11U Max Pitch Count: 85 or 2 innings (whichever first)",
+      xx1 <- textGrob(pitcher_rest,
                       x=0, y=0.9,  just=c("left","top"),
                       gp=gpar(fontsize=pitchtextsize, col=pitchtextcolor))
-      xx2 <- textGrob(paste("Pitch Count: Rest Days", "1-20: 0", "21-40: 1", "41-55: 2", "56-66: 3", "67+: 4",
-                            sep=paste(rep(" ",4), collapse="")),
-                      x=1, y=0.9,  just=c("right","top"),
-                      gp=gpar(fontsize=pitchtextsize, col=pitchtextcolor))
-      gf2 <- placeGrob(gf2, xx1, row=length(heights2), col=nleftcols + 1)
-      gf2 <- placeGrob(gf2, xx2, row=length(heights2), col=nleftcols + ncol + 1)
+      gf2 <- placeGrob(gf2, xx1, row=length(heights2), col=1)
+      #gf2 <- placeGrob(gf2, xx2, row=length(heights2), col=nleftcols + npinnings + 1)
       return(gf2)
     }
   }
