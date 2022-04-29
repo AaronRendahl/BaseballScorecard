@@ -53,7 +53,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
     basesize <- unit(basesize, "inches")
     pitchsize <- unit(0.1,"inches")
     basex <- unit(0.55, "npc")
-    basey <- unit(0.65, "npc")
+    basey <- unit(0.55, "npc")
     xs <- (c(1,2,3,1,2)-1)*pitchsize
     ys <- unit(1, "npc") - (c(1,1,1,2,2)-1)*pitchsize
     pitchboxes <- do.call(gList, mapply(function(x, y) {
@@ -163,7 +163,12 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                        y=unit(1,"npc")-basey - basesize, gp=gpar(fontsize=8))
       )
     }
-    gTree(children=gList(bases, lines, fill,
+    action <- segmentsGrob(x0=unit(0.25, "npc"),
+                           x1=unit(0.75, "npc"),
+                           y0=unit(0.2, "npc"),
+                           y1=unit(0.2, "npc"),
+                           gp=gpar(col=pitchslashcolor, lwd=0.25))
+    gTree(children=gList(bases, lines, fill, action,
                          pitchboxes, countX, fouls,
                          play, out, bybase,
                          sh, pitchnum, box))
