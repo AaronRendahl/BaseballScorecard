@@ -27,7 +27,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   footer.height <- 1.5 # was 1 for blanks
   main.height <- page.height - (margin.top + margin.bottom + header.height + footer.height)
 
-  pitchsize <- 0.11
+  pitchsize <- 0.12
 
   pitchtextsize <- 8
   headertextsize <- 10
@@ -51,7 +51,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
                       out=NA, bybase, play=NA, basesize=0.13, top=FALSE) {
     basesize <- unit(basesize, "inches")
-    pitchsize <- unit(0.1,"inches")
+    pitchsize <- unit(pitchsize, "inches")
     basex <- unit(0.55, "npc")
     basey <- unit(0.5, "npc")
     xs <- (c(1,2,3,1,2)-1)*pitchsize
@@ -261,12 +261,12 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
         gf2 <- placeGrob(gf2,
                          textGrob("#", x=0.05, just="left", gp=gpar(fontsize=leftlabelsize, col=numbercolor)),
                          row=i+1, col=1)
-        box <- rectGrob(gp=gpar(lwd=0.5))
+        box <- rectGrob(gp=gpar(lwd=0.25))
         gf2 <- placeGrob(gf2, box, row=i+1, col=1)
         gf2 <- placeGrob(gf2, box, row=i+1, col=2)
       }
       for(i in 1:npinnings) for(j in 1:npitchers) {
-        box <- rectGrob(gp=gpar(lwd=0.5))
+        box <- rectGrob(gp=gpar(lwd=0.25))
         gf2 <- placeGrob(gf2, box, row=j+1, col=nleftcols+i)
       }
       for(i in 1:6) {
