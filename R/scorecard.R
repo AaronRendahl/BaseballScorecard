@@ -15,6 +15,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                       team_name="Roseville", pitcher_rest="") {
   pages <- match.arg(pages)
 
+  blank <- missing(game)
   page.width <- 8.5
   page.height <- 11
 
@@ -27,7 +28,11 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   footer.height <- 1.5 # was 1 for blanks
   main.height <- page.height - (margin.top + margin.bottom + header.height + footer.height)
 
-  pitchsize <- 0.12
+  if(blank) {
+    pitchsize <- 0.12
+  } else {
+    pitchsize <- 0.10
+  }
 
   pitchtextsize <- 8
   headertextsize <- 10
@@ -53,7 +58,11 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
     basesize <- unit(basesize, "inches")
     pitchsize <- unit(pitchsize, "inches")
     basex <- unit(0.55, "npc")
-    basey <- unit(0.5, "npc")
+    if(blank) {
+      basey <- unit(0.5, "npc")
+    } else {
+      basey <- unit(0.6, "npc")
+    }
     xs <- (c(1,2,3,1,2)-1)*pitchsize
     ys <- unit(1, "npc") - (c(1,1,1,2,2)-1)*pitchsize
     pitchboxes <- do.call(gList, mapply(function(x, y) {
@@ -119,16 +128,17 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                        y1=unit(1, "npc"),
                        gp=gpar(col=pitchslashcolor, lwd=0.25))
     pitchnum <- if(any(is.na(pitchcount))) { NULL } else {
+      a2x <- (unit(1, "npc") + unit(0.5, "npc") + pitchsize*1.5)/2
+      a2y <- unit(1, "npc") - pitchsize*3/4
       a1 <- textGrob(pitchcount[1],
-                     x=basex/2 + (3/2+0.75/4)*pitchsize,
-                     y=unit(1, "npc") - pitchsize,
-                     gp=gpar(fontsize=pitchcountsize))
+                     x=unit(0.5, "npc") + pitchsize*(1.5 - 3/16*1.5),
+                     y=a2y,
+                     gp=gpar(fontsize=pitchcountsize), just="right")
       a2 <- textGrob(pitchcount[2],
-                     x=unit(0.5, "npc") + basex/2,
-                     y=unit(1, "npc") - pitchsize,
+                     x=a2x, y=a2y,
                      gp=gpar(fontsize=pitchcountsize))
       bb <- if(!LastPitch) { NULL } else {
-        rectGrob(x=unit(0.5, "npc") + basex/2, y=unit(1, "npc") - pitchsize,
+        rectGrob(x=a2x, y=a2y,
                  width=unit(1.5,"grobwidth", a2), height=unit(1.5,"grobheight", a2))
       }
       gList(a1, a2, bb)
@@ -139,23 +149,31 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
             circleGrob(x=xx, y=yy, r=xx*0.85))
     } else { NULL }
     play <- if(is.na(play)) { NULL } else {
+      play <- str_replace(play, "-", "")
       if(ToBase==0) {
         textGrob(play, basex, unit(1,"npc") - basey)
       } else {
-        textGrob(play, unit(1, "npc"), unit(1,"npc") - basey,
-                 just="right",
+        textGrob(play,
+                 # ## for in action spot
+                 # x=basex, y=unit(0.1,"npc"),
+                 ## for above B1 text
+                 x=unit(1, "npc"), y=unit(1, "npc") - basey, just="right",
                  gp=gpar(fontsize=8))
       }
     }
     bybase <- if(missing(bybase)) { NULL } else {
       bybase[bybase=="?"] <- ""
+      bybase <- str_remove(bybase, "-.*")
       textGrobNA <- function(label, x, y, ...) {
         if(is.na(label)) return(NULL)
         textGrob(label, x, y, ...)
       }
       yy <- unit(1, "strheight", data=bybase[1])
       xx <- unit(1, "strwidth", data=bybase[1])/2 + yy/3
-      gList(textGrobNA(bybase[1], x=unit(1,"npc") - xx, y=yy),
+      gList(textGrobNA(bybase[1], x=unit(1,"npc") - xx,
+                       y=yy),
+                       # ## to move up above action
+                       # y=yy + unit(0.2, "npc")),
             textGrobNA(bybase[2], x=basex + basesize,
                        y=unit(1,"npc")-basey + basesize, gp=gpar(fontsize=8)),
             textGrobNA(bybase[3], x=basex - basesize,
@@ -164,11 +182,13 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                        y=unit(1,"npc")-basey - basesize, gp=gpar(fontsize=8))
       )
     }
-    action <- segmentsGrob(x0=unit(0.25, "npc"),
-                           x1=unit(1, "npc"),
-                           y0=unit(0.2, "npc"),
-                           y1=unit(0.2, "npc"),
-                           gp=gpar(col=pitchslashcolor, lwd=0.25))
+    action <- if(!blank) { NULL } else {
+      segmentsGrob(x0=unit(0.25, "npc"),
+                   x1=unit(1, "npc"),
+                   y0=unit(0.2, "npc"),
+                   y1=unit(0.2, "npc"),
+                   gp=gpar(col=pitchslashcolor, lwd=0.25))
+    }
     gTree(children=gList(bases, lines, fill, action,
                          pitchboxes, countX, fouls,
                          play, out, bybase,
@@ -368,7 +388,8 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
         score$team <- 1:2
         score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
           mutate(inning=as.integer(inning)) |>
-          mutate(xx = xx[inning], yy=yy[team])
+          mutate(xx = xx[inning], yy=yy[team]) |>
+          mutate(value=replace_na(as.character(value), "-"))
         out2 <- textGrob(score$value, x=xx[score$inning], y=yy[score$team],
                          gp=gpar(fontsize=inningtextsize))
         out3 <- textGrob(teams, x=unit(1-xw,"npc")-unit(6,"pt"), y=yy, just="right", gp=gpar(fontsize=inningtextsize))
