@@ -209,6 +209,7 @@ game_stats <- function(game, rosters) {
                  Pitching=pitcher_stats(game, rosters, "away")))
 }
 
+## calls game_stats
 makestatsfile <- function(games, rosters, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
@@ -218,12 +219,8 @@ makestatsfile <- function(games, rosters, team, filename) {
     }
     x
   }
-
   game <- games[[length(games)]]
-
   game_stats <- game_stats(game, rosters)
-  all_stats <- all_stats(games, rosters, team)
-
   about <- game_stats$about$about
   k_us <- match(team, colnames(game$lineup)[2:3])
   k_them <- setdiff(1:2, k_us)
@@ -238,15 +235,13 @@ makestatsfile <- function(games, rosters, team, filename) {
                   them_stats$Batting |> filter(is.na(Lineup)))
   b1x <- b0[1:(nrow(b0)-2), ]
   b2x <- b0[1:2 + (nrow(b0)-2), ] |> rename(Team="Name")
-  b3x <- all_stats$Batting
-  list.batting <- list(b1x, b2x, b3x) |>
-    setNames(c("Roseville Game Stats", "Team Game Stats", "Roseville Season Stats"))
+  list.batting <- list(b1x, b2x) |>
+    setNames(c("Roseville Game Stats", "Team Game Stats"))
 
   a1x <- us_stats$Pitching
   a2x <- them_stats$Pitching
-  a3x <- all_stats$Pitching
-  list.pitching <- list(us=a1x, them=a2x, season=a3x) |>
-    setNames(c(paste(c("Roseville", team2), "Game Stats"), "Roseville Season Stats"))
+  list.pitching <- list(us=a1x, them=a2x) |>
+    setNames(c(paste(c("Roseville", team2), "Game Stats")))
 
   out <- list(Batting=list.batting, Pitching=list.pitching)
   if(!missing(filename)) {
