@@ -110,36 +110,43 @@ batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
 }
 
 ## PITCHER STATS
+## returns data set with Number, Order, and then all the counting stats
+pitcher_counting_stats <- function(d) {
+  d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, RunnersOut) |> left_join(key, by="Outcome") |>
+    mutate(Out = Out + RunnersOut) |> select(-RunnersOut) |>
+    mutate(Strikes = Strikes + (Pitch == "Strike"), Balls = Balls + (Pitch == "Ball")) |>
+    mutate(Order = as.integer(as_factor(paste(Pitcher)))) |>
+    group_by(Order, Pitcher) |> summarize(
+      G=NA, IP=NA,
+      Outs=sum(Out), BF=sum(Outcome!="_"),
+      S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls), SR=NA,
+      H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)),
+      K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
+      ROE=sum(Outcome=="E"),
+      `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
+      .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
+}
+
 pitcher_stats <- function(game, rosters, who=c("away", "home")) {
   who <- match.arg(who)
   i <- match(who, c("away", "home"))
   x <- game$lineup[c(1,i+1)]
   d <- game[[setdiff(c("home", "away"), who)]]
   team <- colnames(x)[2]
+  ## x has Lineup, <Team Name>; rosters has Number, Name
+  ## <Team Name> to Number, then join by Number
   names(x)[2] <- "Number"
   if(team %in% names(rosters)) {
     x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
-  ff <- function(d) {
-    d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, RunnersOut) |> left_join(key, by="Outcome") |>
-      mutate(Out = Out + RunnersOut) |> select(-RunnersOut) |>
-      mutate(Strikes = Strikes + (Pitch == "Strike"), Balls = Balls + (Pitch == "Ball")) |>
-      mutate(Order = as.integer(as_factor(paste(Pitcher)))) |>
-      group_by(Order, Pitcher) |> summarize(
-        G=NA,IP=NA,
-        Outs=sum(Out), BF=sum(Outcome!="_"),
-        S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls), SR=S/P,
-        H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)),
-        K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
-        ROE=sum(Outcome=="E"),
-        `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-        .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
-  }
+  ##
   bind_rows(
-    d |> mutate(Pitcher=0) |> ff() |> mutate(Number=NA, Name="Team", Order=Inf) |>
+    d |> mutate(Pitcher=0) |> pitcher_counting_stats() |>
+      mutate(Number=NA, Name="Team", Order=Inf) |>
+      mutate(SR=S/P, IP=getIP(Outs)) |>
       mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF),
-    x |> right_join(ff(d), by="Number")
-  ) |> mutate(IP=getIP(Outs)) |> select(any_of(c("Number", "Name")), everything()) |>
+    x |> right_join(pitcher_counting_stats(d) |> mutate(SR=S/P, IP=getIP(Outs)), by="Number")
+  ) |> select(any_of(c("Number", "Name")), everything()) |>
   arrange(Order) |> select(-Lineup, -Order)
 }
 
