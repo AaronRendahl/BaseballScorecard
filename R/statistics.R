@@ -224,7 +224,7 @@ game_stats <- function(game, rosters) {
 }
 
 ## calls game_stats
-makestatsfile <- function(games, rosters, team, filename) {
+makestatsfile <- function(game, rosters, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
     if(!missing(title)) {
@@ -233,7 +233,6 @@ makestatsfile <- function(games, rosters, team, filename) {
     }
     x
   }
-  game <- games[[length(games)]]
   game_stats <- game_stats(game, rosters)
   about <- game_stats$about$about
   k_us <- match(team, colnames(game$lineup)[2:3])
