@@ -216,6 +216,7 @@ makestatsfile <- function(game, rosters, team, filename) {
     }
     x
   }
+  game <- flatten(game)
   stats <- game$stats
   about <- game$about
   k_us <- match(team, stats$Team)
