@@ -169,24 +169,15 @@ readrosters <- function(file) {
   lapply(ss, readxl::read_excel, path=file) |> setNames(ss)
 }
 
-all_stats <- function(games, rosters, team) {
-  both_stats <- function(game, rosters, team) {
-    k <- match(team, colnames(game$lineup))
-    if(!is.na(k)) {
-      list(batter=batter_stats(game, rosters, c("away", "home")[k-1], teamname=FALSE),
-           pitcher=pitcher_stats(game, rosters, c("away", "home")[k-1]))
-    } else {
-      NULL
-    }
-  }
-  ss <- lapply(games, both_stats, rosters=rosters, team=team)
-  b.all <- bind_rows(lapply(ss, function(x) x$batter)) |>
+all_stats <- function(games, team) {
+  the_game_stats <- games |> select(stats) |> unnest(stats)
+  b.all <- the_game_stats |> filter(Team=="Roseville") |> select(Batter_Stats) |> unnest(Batter_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     mutate(Lineup=NA) |>
     mutate(BA=getBA(H,AB)) |>
     mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
-  p.all <- bind_rows(lapply(ss, function(x) x$pitcher)) |>
+  p.all <- the_game_stats |> filter(Team=="Roseville") |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     mutate(SR=S/P, IP=getIP(Outs)) |>
