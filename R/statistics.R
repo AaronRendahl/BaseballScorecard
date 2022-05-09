@@ -207,6 +207,7 @@ get_score <- function(game) {
 
 game_stats <- function(game, rosters) {
   tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"),
+         vs=names(game$lineup)[3:2],
          Data=list(game$away, game$home),
          Pitcher_Stats=list(pitcher_stats(game, rosters, "away"),
                             pitcher_stats(game, rosters, "home")),
