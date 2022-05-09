@@ -221,8 +221,6 @@ makestatsfile <- function(game, rosters, team, filename) {
   k_us <- match(team, stats$Team)
   k_them <- setdiff(1:2, k_us)
   team2 <- stats$Team[k_them]
-  #us <- stats$Role[k_us]
-  #them <- stats$Role[k_them]
 
   b0 <- bind_rows(stats$Batter_Stats[[k_us]],
                   stats$Batter_Stats[[k_them]] |> filter(is.na(Lineup)))
