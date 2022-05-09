@@ -234,7 +234,8 @@ makestatsfile <- function(game, rosters, team, filename) {
   list.pitching <- list(us=a1x, them=a2x) |>
     setNames(c(paste(c(team, team2), "Pitching")))
 
-  out <- list(Batting=list.batting, Pitching=list.pitching)
+  out <- c(list.batting, list.pitching) |>
+    map(~select(., -G))
   if(!missing(filename)) {
     statsToExcel(out, filename)
   }
