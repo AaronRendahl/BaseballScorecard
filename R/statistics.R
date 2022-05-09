@@ -79,6 +79,17 @@ getIP <- function(x) {
   a + b/10
 }
 ## BATTER STATS
+batter_counting_stats <- function(d) {
+  d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
+    group_by(Lineup) |> summarize(
+      G=NA,
+      PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), BA=NA,
+      R=sum(ToBase==4), Blank=NA,
+      K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
+      ROE=sum(Outcome=="E"),
+      `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
+      .groups="drop")
+}
 batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
   who <- match.arg(who)
   i <- match(who, c("away", "home"))
@@ -90,23 +101,14 @@ batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
   if(team %in% names(rosters)) {
     x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
-  ff <- function(d) {
-    d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
-      group_by(Lineup) |> summarize(
-        G=NA,
-        PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), BA=NA,
-        R=sum(ToBase==4), Blank=NA,
-        K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
-        ROE=sum(Outcome=="E"),
-        `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-        .groups="drop") |>
-      mutate(BA=getBA(H, AB))
-  }
-  bind_rows(
-    x |> right_join(ff(d), by="Lineup"),
-    d |> mutate(Lineup=NA) |> ff() |> mutate(Number=NA, Name=teamname) |>
-      mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
-  ) |> select(any_of(c("Number", "Name","G", "Lineup")), everything())
+  stats <- batter_counting_stats(d)
+  ind_stats <- stats |> left_join(x, by="Lineup") |> mutate(BA=getBA(H, AB))
+  team_stats <- stats |> summarize(across(-c(Lineup), sum)) |>
+    mutate(Lineup=NA, Number=NA, Name=teamname) |>
+    mutate(BA=getBA(H, AB)) |>
+    mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
+  bind_rows(ind_stats, team_stats) |>
+    select(any_of(c("Number", "Name", "G", "Lineup")), everything())
 }
 
 ## PITCHER STATS
@@ -139,15 +141,14 @@ pitcher_stats <- function(game, rosters, who=c("away", "home")) {
   if(team %in% names(rosters)) {
     x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
-  ##
-  bind_rows(
-    d |> mutate(Pitcher=0) |> pitcher_counting_stats() |>
-      mutate(Number=NA, Name="Team", Order=Inf) |>
-      mutate(SR=S/P, IP=getIP(Outs)) |>
-      mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF),
-    x |> right_join(pitcher_counting_stats(d) |> mutate(SR=S/P, IP=getIP(Outs)), by="Number")
-  ) |> select(any_of(c("Number", "Name")), everything()) |>
-  arrange(Order) |> select(-Lineup, -Order)
+  stats <- pitcher_counting_stats(d)
+  ind_stats <- stats |> left_join(x, by="Number") |> mutate(SR=S/P, IP=getIP(Outs))
+  team_stats <- stats |> summarize(across(-c(Number, Order), sum)) |>
+    mutate(Number=NA, Name="Team", Order=Inf) |>
+    mutate(SR=S/P, IP=getIP(Outs)) |>
+    mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF)
+  bind_rows(ind_stats, team_stats) |> arrange(Order) |> select(-Lineup, -Order) |>
+    select(any_of(c("Number", "Name")), everything())
 }
 
 readgame <- function(file) {
@@ -180,18 +181,15 @@ all_stats <- function(games, rosters, team) {
   }
   ss <- lapply(games, both_stats, rosters=rosters, team=team)
   b.all <- bind_rows(lapply(ss, function(x) x$batter)) |>
-    group_by(Number, Name) |> mutate(G=n()) |> ungroup() |>
-    mutate(Lineup=NA) |> pivot_longer(-c(Lineup, Number, Name, G)) |>
-    mutate(across("name", as_factor)) |>
-    group_by(Number, Name, G, Lineup, name) |> summarize(value=sum(value), .groups="drop") |>
-    pivot_wider() |> mutate(BA=getBA(H,AB)) |>
+    mutate(G=1) |>
+    group_by(Number, Name) |> mutate(across(everything(), sum)) |> ungroup() |>
+    mutate(Lineup=NA) |>
+    mutate(BA=getBA(H,AB)) |>
     mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
   p.all <- bind_rows(lapply(ss, function(x) x$pitcher)) |>
-    group_by(Number, Name) |> mutate(G=n()) |> ungroup() |>
-    pivot_longer(-c(Number, Name, G)) |>
-    mutate(across("name", as_factor)) |>
-    group_by(Number, Name, G, name) |> summarize(value=sum(value), .groups="drop") |>
-    pivot_wider() |> mutate(SR=S/P) |>
+    mutate(G=1) |>
+    group_by(Number, Name) |> mutate(across(everything(), sum)) |> ungroup() |>
+    mutate(SR=S/P) |>
     mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF, IP=getIP(Outs))
   list(Batting=b.all, Pitching=p.all)
 }
