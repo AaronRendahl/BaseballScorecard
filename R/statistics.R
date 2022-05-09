@@ -205,6 +205,15 @@ get_score <- function(game) {
   out |> as.matrix() |> t() |> cbind(R=Final)
 }
 
+game_stats2 <- function(game, rosters) {
+  tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"),
+         Data=list(game$away, game$home),
+         Pitcher_Stats=list(pitcher_stats(game, rosters, "away"),
+                            pitcher_stats(game, rosters, "home")),
+         Batter_Stats=list(batter_stats(game, rosters, "away"),
+                           batter_stats(game, rosters, "home")))
+}
+
 game_stats <- function(game, rosters) {
   list(about=setNames(list(game$about, colnames(game$lineup)[2], colnames(game$lineup)[3]),
                       c("about", "away", "home")),
