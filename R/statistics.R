@@ -205,22 +205,13 @@ get_score <- function(game) {
   out |> as.matrix() |> t() |> cbind(R=Final)
 }
 
-game_stats2 <- function(game, rosters) {
+game_stats <- function(game, rosters) {
   tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"),
          Data=list(game$away, game$home),
          Pitcher_Stats=list(pitcher_stats(game, rosters, "away"),
                             pitcher_stats(game, rosters, "home")),
          Batter_Stats=list(batter_stats(game, rosters, "away"),
                            batter_stats(game, rosters, "home")))
-}
-
-game_stats <- function(game, rosters) {
-  list(about=setNames(list(game$about, colnames(game$lineup)[2], colnames(game$lineup)[3]),
-                      c("about", "away", "home")),
-       home=list(Batting=batter_stats(game, rosters, "home"),
-                 Pitching=pitcher_stats(game, rosters, "home")),
-       away=list(Batting=batter_stats(game, rosters, "away"),
-                 Pitching=pitcher_stats(game, rosters, "away")))
 }
 
 ## calls game_stats
@@ -233,26 +224,23 @@ makestatsfile <- function(game, rosters, team, filename) {
     }
     x
   }
-  game_stats <- game_stats(game, rosters)
-  about <- game_stats$about$about
-  k_us <- match(team, colnames(game$lineup)[2:3])
+  stats <- game_stats(game, rosters)
+  about <- game$about
+  k_us <- match(team, stats$Team)
   k_them <- setdiff(1:2, k_us)
-  team2 <- colnames(game$lineup[1+k_them])
-  us <- c("away", "home")[k_us]
-  them <- c("away", "home")[k_them]
+  team2 <- stats$Team[k_them]
+  #us <- stats$Role[k_us]
+  #them <- stats$Role[k_them]
 
-  us_stats <- game_stats[[us]]
-  them_stats <- game_stats[[them]]
-
-  b0 <- bind_rows(us_stats$Batting,
-                  them_stats$Batting |> filter(is.na(Lineup)))
+  b0 <- bind_rows(stats$Batter_Stats[[k_us]],
+                  stats$Batter_Stats[[k_them]] |> filter(is.na(Lineup)))
   b1x <- b0[1:(nrow(b0)-2), ]
   b2x <- b0[1:2 + (nrow(b0)-2), ] |> rename(Team="Name")
   list.batting <- list(b1x, b2x) |>
     setNames(c("Roseville Game Stats", "Team Game Stats"))
 
-  a1x <- us_stats$Pitching
-  a2x <- them_stats$Pitching
+  a1x <- stats$Pitcher_Stats[[k_us]]
+  a2x <- stats$Pitcher_Stats[[k_them]]
   list.pitching <- list(us=a1x, them=a2x) |>
     setNames(c(paste(c("Roseville", team2), "Game Stats")))
 
