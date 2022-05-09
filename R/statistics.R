@@ -207,7 +207,7 @@ game_stats <- function(game, rosters) {
 }
 
 ## calls game_stats
-makestatsfile <- function(game, rosters, team, filename) {
+makestatsfile <- function(game, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
     if(!missing(title)) {
