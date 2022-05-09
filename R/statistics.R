@@ -216,7 +216,7 @@ makestatsfile <- function(game, rosters, team, filename) {
     }
     x
   }
-  stats <- game_stats(game, rosters)
+  stats <- game$stats
   about <- game$about
   k_us <- match(team, stats$Team)
   k_them <- setdiff(1:2, k_us)
