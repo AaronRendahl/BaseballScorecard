@@ -227,12 +227,12 @@ makestatsfile <- function(game, rosters, team, filename) {
   b1x <- b0[1:(nrow(b0)-2), ]
   b2x <- b0[1:2 + (nrow(b0)-2), ] |> rename(Team="Name")
   list.batting <- list(b1x, b2x) |>
-    setNames(c(paste(team, "Game Stats"), "Team Game Stats"))
+    setNames(c(paste(team, "Batting"), "Team Batting"))
 
   a1x <- stats$Pitcher_Stats[[k_us]]
   a2x <- stats$Pitcher_Stats[[k_them]]
   list.pitching <- list(us=a1x, them=a2x) |>
-    setNames(c(paste(c(team, team2), "Game Stats")))
+    setNames(c(paste(c(team, team2), "Pitching")))
 
   out <- list(Batting=list.batting, Pitching=list.pitching)
   if(!missing(filename)) {
