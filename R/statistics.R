@@ -12,7 +12,9 @@ makedata <- function(d) {
     f1 <- function(B2, B3, B4) {
       out <- NA
       B <- c(B2, B3, B4)
-      X <- stringr::str_subset(B, "^X")
+      ## need to remove any X at the beginning and any pitches at the end
+      ## for the following code to find the at-bat correctly
+      X <- stringr::str_subset(B, "^X") |> str_remove("-[0-9]+$")
       if(length(X) > 0) {
         out <- stringr::str_replace(X, ".*[^0-9]([0-9]*)$", "\\1") |>
           as.integer() |> replace_na(0L)
