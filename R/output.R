@@ -13,7 +13,7 @@ writeData2 <- function(wb, sheet, x, startRow, startCol) {
   invisible(0)
 }
 
-addData <- function(wb, sheet, dat, header, row) {
+addData <- function(wb, sheet, dat, header, row, boldrows) {
   writeData(wb, sheet, header, startRow=row, startCol=1)
   addStyle(wb, sheet, createStyle(textDecoration="bold"), cols=1, rows=row)
   writeData2(wb, sheet, dat, startRow=row+1, startCol=1)
@@ -22,19 +22,9 @@ addData <- function(wb, sheet, dat, header, row) {
            cols=which(!isNum), rows=row+1)
   addStyle(wb, sheet, createStyle(textDecoration="bold", halign="right"),
            cols=which(isNum), rows=row+1)
-  if("Name" %in% names(dat)) {
-    k <- which(dat$Name=="Team")
-    if(length(k)==1) {
-      addStyle(wb, sheet, createStyle(textDecoration="bold"),
-               cols = seq_len(ncol(dat)), rows = 1 + row + k)
-    }
-  }
-  if("about" %in% names(dat)) {
-    k <- which(dat$about=="Season")
-    if(length(k)==1) {
-      addStyle(wb, sheet, createStyle(textDecoration="bold"),
-               cols = seq_len(ncol(dat)), rows = 1 + row + k)
-    }
+  if(!is.null(boldrows)) {
+    addStyle(wb, sheet, createStyle(textDecoration="bold"),
+             cols = seq_len(ncol(dat)), rows = row + 1 + boldrows)
   }
   numFmt <- tibble(var=c("IP",
                          "BA", "Opp. OBP", "OBPE",
@@ -83,8 +73,21 @@ addDataList <- function(wb, sheet, x) {
       names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
       ## save the resulting data sheet in the original list
       x[[i]] <- xi
+      ## which rows should be bold
+      if("Name" %in% names(xi)) {
+        k <- which(xi$Name=="Team")
+        if(length(k)==1) {
+          boldrows <- k
+        }
+      }
+      if("about" %in% names(xi)) {
+        k <- which(xi$about=="Season")
+        if(length(k)==1) {
+          boldrows <- k
+        }
+      }
       ## now add to the spreadsheet
-      wb <- addData(wb, sheet, xi, names(x)[i], row=row[i])
+      wb <- addData(wb, sheet, xi, names(x)[i], row=row[i], boldrows = boldrows)
     } else {
       for(j in seq_along(xi)) {
         writeData(wb, sheet, xi[[j]], startRow=row[i]+j-1, startCol=1)
