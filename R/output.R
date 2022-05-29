@@ -116,8 +116,7 @@ statsToExcel <- function(out, filename) {
 }
 
 toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$"),
-                     dir="Roseville 10U AA 2021 Stats",
-                     subdir) {
+                     dir, subdir) {
   if(!missing(subdir)) { dir <- file.path(dir, subdir) }
   if(str_detect(file, "xlsx$")) {
     dimxl <- function(path, sheet) {
