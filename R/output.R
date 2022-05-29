@@ -85,8 +85,9 @@ addDataList <- function(wb, sheet, x) {
       numFmt <- tibble(var=c("IP",
                              "BA", "Opp. OBP", "OBPE",
                              "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
+                             "Contact/AB", "Hard/AB", "Hard/Contact",
                              "SR", "K/PA", "BBHB/BF"),
-                       numFmt=c("0.0", rep("0.000", 5), rep("0%", 3)))
+                       numFmt=c("0.0", rep("0.000", 8), rep("0%", 3)))
       numFmt <- numFmt$numFmt[match(names(xi), numFmt$var)]
       ## now add to the spreadsheet
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i],
@@ -102,6 +103,7 @@ addDataList <- function(wb, sheet, x) {
   wx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
                   tibble(name=c("SR", "K/PA"), width=7),
                   tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
+                  tibble(name=c("Contact", "Contact/AB", "Hard/AB", "Hard/Contact"), width=c(8, 10, 10, 12)),
                   tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
   xdf <- x[sapply(x, is.data.frame)]
   ws <- purrr::map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
