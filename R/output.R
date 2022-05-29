@@ -24,18 +24,17 @@ addData <- function(wb, sheet, dat, header, row) {
                cols = seq_len(ncol(dat)), rows = 1 + row + k)
     }
   }
-  addStyle(wb, sheet, createStyle(numFmt="0.0"),
-           cols=which(names(dat) %in% c("IP")),
-           rows=(1 + row + 1:nrow(dat)),
-           gridExpand=TRUE, stack=TRUE)
-  addStyle(wb, sheet, createStyle(numFmt="0.000"),
-           cols=which(names(dat) %in% c("BA", "Opp. OBP", "OBPE") | stringr::str_detect(names(dat), "Sum$")),
-           rows=(1 + row + 1:nrow(dat)),
-           gridExpand=TRUE, stack=TRUE)
-  addStyle(wb, sheet, createStyle(numFmt="0%"),
-           cols=which(names(dat) %in% c("SR", "K/PA", "BBHB/BF")),
-           rows=(1 + row + 1:nrow(dat)),
-           gridExpand=TRUE, stack=TRUE)
+  numFmt <- tibble(var=c("IP",
+                         "BA", "Opp. OBP", "OBPE",
+                         "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
+                         "SR", "K/PA", "BBHB/BF"),
+                   numFmt=c("0.0", rep("0.000", 5), rep("0%", 3)))
+  tmp <- tibble(col=seq_len(ncol(dat)), var=names(dat)) |> inner_join(numFmt, by="var")
+  for(idx in seq_len(nrow(tmp))) {
+    addStyle(wb, sheet, createStyle(numFmt=tmp$numFmt[idx]),
+             cols=tmp$col[idx], rows=(1 + row + 1:nrow(dat)),
+             gridExpand=TRUE, stack=TRUE)
+  }
   wb
 }
 
