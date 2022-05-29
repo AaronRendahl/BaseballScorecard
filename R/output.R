@@ -35,21 +35,24 @@ addData <- function(wb, sheet, dat, header, row, boldrows=NULL, numFmt=NA) {
 }
 
 ## get desired number format for each column
-numFmtx <- tibble(var=c("IP",
+tmp1 <- tibble(name=c("IP",
                        "BA", "Opp. OBP", "OBPE",
                        "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
                        "Contact/AB", "Hard/AB", "Hard/Contact",
                        "SR", "K/PA", "BBHB/BF"),
                  numFmt=c("0.0", rep("0.000", 8), rep("0%", 3)))
 
-colwidthsx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
+tmp2 <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
                 tibble(name=c("SR", "K/PA"), width=7),
                 tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
                 tibble(name=c("Contact", "Contact/AB", "Hard/AB", "Hard/Contact"), width=c(8, 10, 10, 12)),
                 tibble(name=c("BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum"), width=20),
                 tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
 
-addDataList <- function(wb, sheet, x, numFmt=numFmtx, colwidths=colwidthsx) {
+fmt <- full_join(tmp1, tmp2)
+rm(tmp1, tmp2)
+
+addDataList <- function(wb, sheet, x, format=fmt) {
   ## count how many rows needed for each part
   ## for data frame need to count title and header row (so +2)
   nr <- sapply(x, function(x) {if(is.data.frame(x)) nrow(x) + 2 else length(x) })
@@ -95,7 +98,7 @@ addDataList <- function(wb, sheet, x, numFmt=numFmtx, colwidths=colwidthsx) {
           boldrows <- k
         }
       }
-      numFmts <- numFmt$numFmt[match(names(xi), numFmt$var)]
+      numFmts <- fmt$numFmt[match(names(xi), fmt$name)]
       ## now add to the spreadsheet
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i],
                     boldrows = boldrows, numFmt=numFmts)
@@ -109,7 +112,7 @@ addDataList <- function(wb, sheet, x, numFmt=numFmtx, colwidths=colwidthsx) {
   w0 <- 5
   xdf <- x[sapply(x, is.data.frame)]
   ws <- purrr::map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
-    left_join(colwidths, by="name") |> mutate(width=replace_na(width, w0)) |>
+    left_join(fmt, by="name") |> mutate(width=replace_na(width, w0)) |>
     group_by(col) |> summarize(width=max(width), .groups="drop") |> arrange(col)
   setColWidths(wb, sheet, cols = ws$col, widths = ws$width)
   wb
