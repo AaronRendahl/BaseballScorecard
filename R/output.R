@@ -61,6 +61,7 @@ addDataList <- function(wb, sheet, x) {
       kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
       xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
       names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
+      x[[i]] <- xi
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i])
       if("when" %in% names(xi)) {
         k <- which(names(xi)=="when")
