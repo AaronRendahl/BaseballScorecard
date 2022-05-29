@@ -13,7 +13,7 @@ writeData2 <- function(wb, sheet, x, startRow, startCol) {
   invisible(0)
 }
 
-addData <- function(wb, sheet, dat, header, row, boldrows) {
+addData <- function(wb, sheet, dat, header, row, boldrows=NULL, numFmt=NA) {
   writeData(wb, sheet, header, startRow=row, startCol=1)
   addStyle(wb, sheet, createStyle(textDecoration="bold"), cols=1, rows=row)
   writeData2(wb, sheet, dat, startRow=row+1, startCol=1)
@@ -26,15 +26,9 @@ addData <- function(wb, sheet, dat, header, row, boldrows) {
     addStyle(wb, sheet, createStyle(textDecoration="bold"),
              cols = seq_len(ncol(dat)), rows = row + 1 + boldrows)
   }
-  numFmt <- tibble(var=c("IP",
-                         "BA", "Opp. OBP", "OBPE",
-                         "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
-                         "SR", "K/PA", "BBHB/BF"),
-                   numFmt=c("0.0", rep("0.000", 5), rep("0%", 3)))
-  tmp <- tibble(col=seq_len(ncol(dat)), var=names(dat)) |> inner_join(numFmt, by="var")
-  for(idx in seq_len(nrow(tmp))) {
-    addStyle(wb, sheet, createStyle(numFmt=tmp$numFmt[idx]),
-             cols=tmp$col[idx], rows=(1 + row + 1:nrow(dat)),
+  for(idx in which(!is.na(numFmt))) {
+    addStyle(wb, sheet, createStyle(numFmt=numFmt[idx]),
+             cols=idx, rows=(1 + row + 1:nrow(dat)),
              gridExpand=TRUE, stack=TRUE)
   }
   wb
@@ -74,6 +68,7 @@ addDataList <- function(wb, sheet, x) {
       ## save the resulting data sheet in the original list
       x[[i]] <- xi
       ## which rows should be bold
+      boldrows <- NULL
       if("Name" %in% names(xi)) {
         k <- which(xi$Name=="Team")
         if(length(k)==1) {
@@ -86,8 +81,16 @@ addDataList <- function(wb, sheet, x) {
           boldrows <- k
         }
       }
+      ## get desired number format for each column
+      numFmt <- tibble(var=c("IP",
+                             "BA", "Opp. OBP", "OBPE",
+                             "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
+                             "SR", "K/PA", "BBHB/BF"),
+                       numFmt=c("0.0", rep("0.000", 5), rep("0%", 3)))
+      numFmt <- numFmt$numFmt[match(names(xi), numFmt$var)]
       ## now add to the spreadsheet
-      wb <- addData(wb, sheet, xi, names(x)[i], row=row[i], boldrows = boldrows)
+      wb <- addData(wb, sheet, xi, names(x)[i], row=row[i],
+                    boldrows = boldrows, numFmt=numFmt)
     } else {
       for(j in seq_along(xi)) {
         writeData(wb, sheet, xi[[j]], startRow=row[i]+j-1, startCol=1)
