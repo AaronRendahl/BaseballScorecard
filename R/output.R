@@ -1,10 +1,22 @@
 ######
 ## output to Excel file
+writeData2 <- function(wb, sheet, x, startRow, startCol) {
+  writeData(wb, sheet, x, startRow=startRow, startCol=startCol)
+  k <- which(sapply(x, function(x) class(x)[1])=="hyperlink")
+  for(col in k) for(row in seq_len(nrow(x))) {
+    xij <- x[[col]][row]
+    if(!is.na(xij)) {
+      class(xij) <- "hyperlink"
+      writeData(wb, sheet, xij, startRow=startRow + row, startCol=startCol+col-1)
+    }
+  }
+  invisible(0)
+}
 
 addData <- function(wb, sheet, dat, header, row) {
   writeData(wb, sheet, header, startRow=row, startCol=1)
   addStyle(wb, sheet, createStyle(textDecoration="bold"), cols=1, rows=row)
-  writeData(wb, sheet, dat, startRow=row+1, startCol=1)
+  writeData2(wb, sheet, dat, startRow=row+1, startCol=1)
   isNum <- sapply(dat, is.numeric)
   addStyle(wb, sheet, createStyle(textDecoration="bold"),
            cols=which(!isNum), rows=row+1)
@@ -50,11 +62,16 @@ addDataList <- function(wb, sheet, x) {
     if(is.data.frame(xi)) {
       ## remove Outs from output now that have IP
       xi$Outs <- NULL
-      ## save scorecard links and remove from output
+      ## add scorecard links as hyperlinks to "when" column
       link <- NULL
       if(!is.null(xi$scorecard_link)) {
         link <- xi$scorecard_link
         xi$scorecard_link <- NULL
+        if("when" %in% names(xi)) {
+          names(link) <- xi$when
+          xi$when <- link
+          class(xi$when) <- "hyperlink"
+        }
       }
       ## Determine which columns are all missing. Specifically should be these:
       ## c("Lineup", "Number", "Name", "G", "BA")
@@ -66,19 +83,8 @@ addDataList <- function(wb, sheet, x) {
       names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
       ## save the resulting data sheet in the original list
       x[[i]] <- xi
-      ## now add to the spreadsheet and also add the links to the "when" column
+      ## now add to the spreadsheet
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i])
-      if("when" %in% names(xi)) {
-        k <- which(names(xi)=="when")
-        names(link) <- xi$when
-        for(j in seq_along(link)) {
-          linkx <- link[j]
-          if(!is.na(linkx)) {
-            class(linkx) <- "hyperlink"
-            writeData(wb, sheet, linkx, startRow=row[i]+1+j, startCol=k)
-          }
-        }
-      }
     } else {
       for(j in seq_along(xi)) {
         writeData(wb, sheet, xi[[j]], startRow=row[i]+j-1, startCol=1)
