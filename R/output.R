@@ -57,12 +57,14 @@ addDataList <- function(wb, sheet, x) {
         link <- xi$scorecard_link
         xi$scorecard_link <- NULL
       }
-      ## set name blank for anything that is all NAs. Specifically should be these:
+      ## Determine which columns are all missing. Specifically should be these:
       ## c("Lineup", "Number", "Name", "G", "BA")
       kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
-      names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
       ## for certain counting stats replace zeros with blanks
       xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
+      ## now set name blank for anything that is all missing.
+      ## this needs to be last because can't use tidyverse functions with duplicate names
+      names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
       ## save the resulting data sheet in the original list
       x[[i]] <- xi
       ## now add to the spreadsheet and also add the links to the "when" column
