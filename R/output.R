@@ -34,8 +34,22 @@ addData <- function(wb, sheet, dat, header, row, boldrows=NULL, numFmt=NA) {
   wb
 }
 
+## get desired number format for each column
+numFmtx <- tibble(var=c("IP",
+                       "BA", "Opp. OBP", "OBPE",
+                       "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
+                       "Contact/AB", "Hard/AB", "Hard/Contact",
+                       "SR", "K/PA", "BBHB/BF"),
+                 numFmt=c("0.0", rep("0.000", 8), rep("0%", 3)))
 
-addDataList <- function(wb, sheet, x) {
+colwidthsx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
+                tibble(name=c("SR", "K/PA"), width=7),
+                tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
+                tibble(name=c("Contact", "Contact/AB", "Hard/AB", "Hard/Contact"), width=c(8, 10, 10, 12)),
+                tibble(name=c("BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum"), width=20),
+                tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
+
+addDataList <- function(wb, sheet, x, numFmt=numFmtx, colwidths=colwidthsx) {
   ## count how many rows needed for each part
   ## for data frame need to count title and header row (so +2)
   nr <- sapply(x, function(x) {if(is.data.frame(x)) nrow(x) + 2 else length(x) })
@@ -81,17 +95,10 @@ addDataList <- function(wb, sheet, x) {
           boldrows <- k
         }
       }
-      ## get desired number format for each column
-      numFmt <- tibble(var=c("IP",
-                             "BA", "Opp. OBP", "OBPE",
-                             "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
-                             "Contact/AB", "Hard/AB", "Hard/Contact",
-                             "SR", "K/PA", "BBHB/BF"),
-                       numFmt=c("0.0", rep("0.000", 8), rep("0%", 3)))
-      numFmt <- numFmt$numFmt[match(names(xi), numFmt$var)]
+      numFmts <- numFmt$numFmt[match(names(xi), numFmt$var)]
       ## now add to the spreadsheet
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i],
-                    boldrows = boldrows, numFmt=numFmt)
+                    boldrows = boldrows, numFmt=numFmts)
     } else {
       for(j in seq_along(xi)) {
         writeData(wb, sheet, xi[[j]], startRow=row[i]+j-1, startCol=1)
@@ -100,15 +107,9 @@ addDataList <- function(wb, sheet, x) {
     }
   }
   w0 <- 5
-  wx <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP"), width=8),
-                  tibble(name=c("SR", "K/PA"), width=7),
-                  tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
-                  tibble(name=c("Contact", "Contact/AB", "Hard/AB", "Hard/Contact"), width=c(8, 10, 10, 12)),
-                  tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
   xdf <- x[sapply(x, is.data.frame)]
   ws <- purrr::map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
-    left_join(wx, by="name") |> mutate(width=replace_na(width, w0),
-                                       width=if_else(stringr::str_detect(name, "Sum$"), 20, width)) |>
+    left_join(colwidths, by="name") |> mutate(width=replace_na(width, w0)) |>
     group_by(col) |> summarize(width=max(width), .groups="drop") |> arrange(col)
   setColWidths(wb, sheet, cols = ws$col, widths = ws$width)
   wb
