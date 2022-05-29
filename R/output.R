@@ -51,17 +51,21 @@ addDataList <- function(wb, sheet, x) {
     if(is.data.frame(xi)) {
       ## remove Outs from output now that have IP
       xi$Outs <- NULL
-      ## set name blank for anything that is all NAs. Specifically should be these:
-      ## c("Lineup", "Number", "Name", "G", "BA")
+      ## save scorecard links and remove from output
       link <- NULL
       if(!is.null(xi$scorecard_link)) {
         link <- xi$scorecard_link
         xi$scorecard_link <- NULL
       }
+      ## set name blank for anything that is all NAs. Specifically should be these:
+      ## c("Lineup", "Number", "Name", "G", "BA")
       kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
-      xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
       names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
+      ## for certain counting stats replace zeros with blanks
+      xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
+      ## save the resulting data sheet in the original list
       x[[i]] <- xi
+      ## now add to the spreadsheet and also add the links to the "when" column
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i])
       if("when" %in% names(xi)) {
         k <- which(names(xi)=="when")
