@@ -246,3 +246,44 @@ makestatsfile <- function(game, team, filename) {
 }
 
 
+get_all_stats <- function(gs, team) {
+  all_the_stats <- all_stats(gs, team=team)
+  the_game_stats <- gs |> select(about, when, code, stats) |> unnest(stats) |>
+    left_join(scorecard_list, by="code")
+  batting_stats <- the_game_stats |> filter(Team==team) |>
+    select(about, when, scorecard_link, vs, Batter_Stats) |> unnest(Batter_Stats) |>
+    mutate(type="Batting") |>
+    bind_rows(all_the_stats$Batting %>% mutate(type="Batting", about="Season")) %>%
+    mutate(Name=if_else(Name==team, "Team", Name)) %>%
+    mutate(NumberX=replace_na(Number, -1)) %>% arrange(NumberX) %>% select(-NumberX) %>%
+    mutate(X=as_factor(if_else(!is.na(Number), paste(Number, Name), Name))) %>%
+    nest(data=c(-X, -type))
+  pitching_stats <- the_game_stats |> filter(Team==team) |>
+    select(about, when, scorecard_link, vs, Pitcher_Stats) |> unnest(Pitcher_Stats) |>
+    mutate(type="Pitching") |>
+    bind_rows(all_the_stats$Pitching %>% mutate(type="Pitching", about="Season")) %>%
+    mutate(NumberX=replace_na(Number, -1)) %>% arrange(NumberX) %>% select(-NumberX) %>%
+    mutate(X=as_factor(if_else(!is.na(Number), paste(Number, Name), Name))) %>%
+    nest(data=c(-X, -type))
+  x <- bind_rows(batting_stats, pitching_stats)
+
+  all_the_stats$Batting <- all_the_stats$Batting %>%
+    mutate(Name=if_else(Name==team, "Team", Name)) |>
+    mutate(BatSum = BA + OBPE + (1-`K/PA`),
+           K.=K, BBHB=BB+HBP, BIP=PA - K - BBHB, H.=H) %>%
+    arrange(desc(BatSum), Number) %>%
+    rename("BA + OBPE + notK/PA:\nBatting Sum" = "BatSum")
+  all_the_stats$Pitching <- all_the_stats$Pitching %>%
+    mutate(PitchSum = SR + (1-`Opp. OBP`) + (1-`BBHB/BF`),
+           K.=K, BBHB=BB+HB, BIP=BF - K - BBHB, H.=H) %>%
+    arrange(desc(PitchSum)) %>%
+    rename("SR + notOB + notBBHB:\nPitching Sum" = "PitchSum")
+
+  x$data <- setNames(x$data, x$type)
+  xAll <- split(x, x$X) %>% map(pull, "data")
+  xAll$Team <- map(xAll$Team, select, -c(Number, Name))
+
+  xAllStats <- c(list(Individual=all_the_stats), xAll)
+  names(xAllStats) <- str_remove(names(xAllStats), " NA")
+  xAllStats
+}
