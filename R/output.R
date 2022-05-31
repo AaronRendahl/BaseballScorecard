@@ -13,7 +13,7 @@ writeData2 <- function(wb, sheet, x, startRow, startCol) {
   invisible(0)
 }
 
-addData <- function(wb, sheet, dat, header, row, boldrows=NULL, numFmt=NA) {
+addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
   writeData(wb, sheet, header, startRow=row, startCol=1)
   addStyle(wb, sheet, createStyle(textDecoration="bold"), cols=1, rows=row)
   writeData2(wb, sheet, dat, startRow=row+1, startCol=1)
@@ -22,9 +22,11 @@ addData <- function(wb, sheet, dat, header, row, boldrows=NULL, numFmt=NA) {
            cols=which(!isNum), rows=row+1)
   addStyle(wb, sheet, createStyle(textDecoration="bold", halign="right"),
            cols=which(isNum), rows=row+1)
-  if(!is.null(boldrows)) {
-    addStyle(wb, sheet, createStyle(textDecoration="bold"),
-             cols = seq_len(ncol(dat)), rows = row + 1 + boldrows)
+  if(!is.null(dat$.textDecoration) && any(!is.na(dat$.textDecoration))) {
+    for(k in which(!is.na(dat$.textDecoration))) {
+      addStyle(wb, sheet, createStyle(textDecoration=dat$.textDecoration[k]),
+               cols = seq_len(ncol(dat)), rows = row + 1 + k)
+    }
   }
   for(idx in which(!is.na(numFmt))) {
     addStyle(wb, sheet, createStyle(numFmt=numFmt[idx]),
@@ -98,10 +100,12 @@ addDataList <- function(wb, sheet, x, format=fmt) {
           boldrows <- k
         }
       }
+      xi$.textDecoration <- NA
+      xi$.textDecoration[k] <- "bold"
       numFmts <- fmt$numFmt[match(names(xi), fmt$name)]
       ## now add to the spreadsheet
       wb <- addData(wb, sheet, xi, names(x)[i], row=row[i],
-                    boldrows = boldrows, numFmt=numFmts)
+                    numFmt=numFmts)
     } else {
       for(j in seq_along(xi)) {
         writeData(wb, sheet, xi[[j]], startRow=row[i]+j-1, startCol=1)
