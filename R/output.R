@@ -96,7 +96,7 @@ addDataList <- function(wb, sheet, x, format=fmt) {
       xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
       ## now set name blank for anything that is all missing.
       ## this needs to be last because can't use tidyverse functions with duplicate names
-      names(xi)[kk] <- "" # map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
+      names(xi)[kk] <- map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
       ## save the resulting data sheet in the original list
       x[[i]] <- xi
       ## which rows should be bold
