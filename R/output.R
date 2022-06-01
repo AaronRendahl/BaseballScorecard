@@ -1,19 +1,5 @@
 ######
 ## output to Excel file
-writeData2 <- function(wb, sheet, x, startRow, startCol) {
-  x
-  writeData(wb, sheet, x, startRow=startRow, startCol=startCol)
-  k <- which(sapply(x, function(x) class(x)[1])=="hyperlink")
-  for(col in k) for(row in seq_len(nrow(x))) {
-    xij <- x[[col]][row]
-    if(!is.na(xij)) {
-      class(xij) <- "hyperlink"
-      writeData(wb, sheet, xij, startRow=startRow + row, startCol=startCol+col-1)
-    }
-  }
-  invisible(0)
-}
-
 addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
   about <- dat |> select(starts_with("."))
   dat <- dat |> select(!starts_with("."))
@@ -29,8 +15,8 @@ addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
   addStyle(wb, sheet, createStyle(textDecoration="bold", halign="right"),
            cols=which(isNum), rows=row+1)
   ## add textDecoration
-  if(!is.null(about$.textDecoration) && any(!is.na(dat$.textDecoration))) {
-    for(k in which(!is.na(dat$.textDecoration))) {
+  if(!is.null(about$.textDecoration) && any(!is.na(about$.textDecoration))) {
+    for(k in which(!is.na(about$.textDecoration))) {
       addStyle(wb, sheet, createStyle(textDecoration=about$.textDecoration[k]),
                cols = seq_len(ncol(dat)), rows = row + 1 + k)
     }
@@ -42,9 +28,9 @@ addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
     nh <- intersect(names(h), names(dat))
     for(n in nh) {
       col <- which(names(dat)==n)
-      for(rowi in seq_len(nrow(x))) {
-        val <- dat[[col]][rowi]
-        link <- h[[col]][rowi]
+      for(rowi in seq_len(nrow(dat))) {
+        val <- dat[[n]][rowi]
+        link <- h[[n]][rowi]
         if(!is.na(val) && !is.na(link)) {
           names(link) <- val
           class(link) <- "hyperlink"
