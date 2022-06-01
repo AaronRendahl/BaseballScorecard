@@ -1,6 +1,7 @@
 ######
 ## output to Excel file
 writeData2 <- function(wb, sheet, x, startRow, startCol) {
+  x
   writeData(wb, sheet, x, startRow=startRow, startCol=startCol)
   k <- which(sapply(x, function(x) class(x)[1])=="hyperlink")
   for(col in k) for(row in seq_len(nrow(x))) {
@@ -14,20 +15,45 @@ writeData2 <- function(wb, sheet, x, startRow, startCol) {
 }
 
 addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
+  about <- dat |> select(starts_with("."))
+  dat <- dat |> select(!starts_with("."))
+  ## put header in first desired row and bold it
   writeData(wb, sheet, header, startRow=row, startCol=1)
   addStyle(wb, sheet, createStyle(textDecoration="bold"), cols=1, rows=row)
-  writeData2(wb, sheet, dat, startRow=row+1, startCol=1)
+  ## add data starting on the next row
+  writeData(wb, sheet, dat, startRow=row+1, startCol=1)
+  ## make header row bold, with text justified left and numeric justified right
   isNum <- sapply(dat, is.numeric)
   addStyle(wb, sheet, createStyle(textDecoration="bold"),
            cols=which(!isNum), rows=row+1)
   addStyle(wb, sheet, createStyle(textDecoration="bold", halign="right"),
            cols=which(isNum), rows=row+1)
-  if(!is.null(dat$.textDecoration) && any(!is.na(dat$.textDecoration))) {
+  ## add textDecoration
+  if(!is.null(about$.textDecoration) && any(!is.na(dat$.textDecoration))) {
     for(k in which(!is.na(dat$.textDecoration))) {
-      addStyle(wb, sheet, createStyle(textDecoration=dat$.textDecoration[k]),
+      addStyle(wb, sheet, createStyle(textDecoration=about$.textDecoration[k]),
                cols = seq_len(ncol(dat)), rows = row + 1 + k)
     }
   }
+  ## add hyperlinks
+  h <- about |> select(starts_with(".hyperlink"))
+  if(ncol(h)>0) {
+    names(h) <- str_remove(names(h), fixed(".hyperlink."))
+    nh <- intersect(names(h), names(dat))
+    for(n in nh) {
+      col <- which(names(dat)==n)
+      for(rowi in seq_len(nrow(x))) {
+        val <- dat[[col]][rowi]
+        link <- h[[col]][rowi]
+        if(!is.na(val) && !is.na(link)) {
+          names(link) <- val
+          class(link) <- "hyperlink"
+          writeData(wb, sheet, link, startRow=row + 1 + rowi, startCol=col)
+        }
+      }
+    }
+  }
+  ## format columns
   for(idx in which(!is.na(numFmt))) {
     addStyle(wb, sheet, createStyle(numFmt=numFmt[idx]),
              cols=idx, rows=(1 + row + 1:nrow(dat)),
@@ -66,15 +92,16 @@ addDataList <- function(wb, sheet, x, format=fmt) {
       ## remove Outs from output now that have IP
       xi$Outs <- NULL
       ## add scorecard links as hyperlinks to "when" column
-      link <- NULL
+      #link <- NULL
       if(!is.null(xi$scorecard_link)) {
-        link <- xi$scorecard_link
+        xi$.hyperlink.when <- xi$scorecard_link
+        #link <- xi$scorecard_link
         xi$scorecard_link <- NULL
-        if("when" %in% names(xi)) {
-          names(link) <- xi$when
-          xi$when <- link
-          class(xi$when) <- "hyperlink"
-        }
+        # if("when" %in% names(xi)) {
+        #   names(link) <- xi$when
+        #   xi$when <- link
+        #   class(xi$when) <- "hyperlink"
+        # }
       }
       ## Determine which columns are all missing. Specifically should be these:
       ## c("Lineup", "Number", "Name", "G", "BA")
