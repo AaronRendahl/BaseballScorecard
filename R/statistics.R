@@ -86,21 +86,21 @@ batter_calculations <- list("BA" = "getBA(H, AB)",
                             "K/PA" = "K / PA",
                             "OBPE" = "(H + BB + HBP + ROE) / PA",
                             "SLG" = "(`1B` + 2*`2B` + 3*`3B` + 4*`HR`) / AB",
-                            "BA + OBPE + notK/PA:\nBatting Sum" = "BA + OBPE + (1 - `K/PA`)",
+                            "SLG + OBPE + notK/PA:\nBatting Sum" = "SLG + OBPE + (1 - `K/PA`)",
                             K.="K", BBHB="BB+HBP", BIP="PA - K - BBHB", H.="H",
                             "Blank" = NA) |>
   lapply(function(x) parse(text=x))
 
 batter_cols_ind <- c("PA", "H", "AB", "BA", "R", "Blank", "K", "BB", "HBP", "ROE",
                      "1B", "2B", "3B", "HR")
-batter_cols_team <- c(batter_cols_ind, "SLG", "K/PA", "OBPE")
+batter_cols_team <- c(batter_cols_ind, "SLG", "OBPE", "K/PA")
 batter_cols_total <- c(batter_cols_team,
-                       "BA + OBPE + notK/PA:\nBatting Sum",
+                       "SLG + OBPE + notK/PA:\nBatting Sum",
                        "Blank",
                        "K.", "BBHB", "BIP", "H.")
-attr(batter_cols_total, "sortby") <- "BA + OBPE + notK/PA:\nBatting Sum"
+attr(batter_cols_total, "sortby") <- "SLG + OBPE + notK/PA:\nBatting Sum"
 
-pitcher_calculations <- list("SR" = "S/P",
+pitcher_calculations <- list("SR" = "S/P", "SR." = "S/P",
                              "IP" = "getIP(Outs)",
                              "BBHB/BF" = "(BB + HB) / BF",
                              "Opp. OBP" = "(H + BB + HB) / BF",
@@ -110,7 +110,7 @@ pitcher_calculations <- list("SR" = "S/P",
   lapply(function(x) parse(text=x))
 pitcher_cols_ind <- c("IP", "Outs", "BF", "S", "P", "SR", "H", "AB", "K", "BB", "HB", "ROE",
                       "1B", "2B", "3B", "HR")
-pitcher_cols_team <- c(pitcher_cols_ind, "Blank", "BBHB/BF", "Opp. OBP")
+pitcher_cols_team <- c(pitcher_cols_ind, "SR.", "Opp. OBP", "BBHB/BF")
 pitcher_cols_total <- c(pitcher_cols_team, "SR + notOB + notBBHB:\nPitching Sum",
                         "Blank",
                         "K.", "BBHB", "BIP", "H.")
@@ -125,7 +125,8 @@ calc_stats <- function(data, calculations, columns) {
   if(!is.null(sortby)) {
     data <- data[order(-data[[sortby]]),]
   }
-  data
+  keep <- c("about", "when", "vs", "Number", "Name", "G", "Lineup", "Order")
+  data[c(intersect(keep, names(data)), columns)]
 }
 
 ## BATTER STATS
@@ -315,10 +316,10 @@ get_all_stats <- function(gs, team) {
   all_the_stats$Batting <- all_the_stats$Batting %>%
     mutate(Name=if_else(Name==team, "Team", Name)) |>
     calc_stats(batter_calculations, batter_cols_total)
-  all_the_stats$Batting <- all_the_stats$Batting[c("Number", "Name", "G", "Lineup", batter_cols_total)]
+  #all_the_stats$Batting <- all_the_stats$Batting[c("Number", "Name", "G", "Lineup", batter_cols_total)]
   all_the_stats$Pitching <- all_the_stats$Pitching %>%
     calc_stats(pitcher_calculations, pitcher_cols_total)
-  all_the_stats$Pitching <- all_the_stats$Pitching[c("Number", "Name", "G", pitcher_cols_total)]
+  #all_the_stats$Pitching <- all_the_stats$Pitching[c("Number", "Name", "G", pitcher_cols_total)]
 
   x$data <- setNames(x$data, x$type)
   xAll <- split(x, x$X) %>% map(pull, "data")
