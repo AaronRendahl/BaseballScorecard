@@ -84,14 +84,42 @@ getIP <- function(x) {
 batter_counting_stats <- function(d) {
   d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
     group_by(Lineup) |> summarize(
-      G=NA,
-      PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), BA=NA,
-      R=sum(ToBase==4), Blank=NA,
+      #G=NA,
+      PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), #BA=NA,
+      R=sum(ToBase==4), #Blank=NA,
       K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
       ROE=sum(Outcome=="E"),
       `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
       .groups="drop")
 }
+
+batter_calculations <- list("BA" = "getBA(H, AB)",
+                            "K/PA" = "K / PA",
+                            "OBPE" = "(H + BB + HBP + ROE) / PA",
+                            "BA + OBPE + notK/PA:\nBatting Sum" = "BA + OBPE + (1 - `K/PA`)",
+                            K.="K", BBHB="BB+HBP", BIP="PA - K - BBHB", H.="H",
+                            "Blank" = NA) |>
+  lapply(function(x) parse(text=x))
+
+batter_cols_ind <- c("PA", "H", "AB", "BA", "R", "Blank", "K", "BB", "HBP", "ROE",
+                     "1B", "2B", "3B", "HR")
+batter_cols_team <- c(batter_cols_ind, "K/PA", "OBPE")
+batter_cols_total <- c(batter_cols_team,
+                       "BA + OBPE + notK/PA:\nBatting Sum", "K.", "BBHB", "BIP", "H.")
+attr(batter_cols_total, "sortby") <- "BA + OBPE + notK/PA:\nBatting Sum"
+
+calc_stats <- function(data, calculations, columns) {
+  ok <- intersect(names(calculations), columns)
+  for(n in ok) {
+    data[[n]] <- with(data, eval(calculations[[n]]))
+  }
+  sortby <- attr(columns, "sortby")
+  if(!is.null(sortby)) {
+    data <- data[order(-data[[sortby]]),]
+  }
+  data
+}
+
 batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
   who <- match.arg(who)
   i <- match(who, c("away", "home"))
@@ -104,13 +132,16 @@ batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
     x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
   stats <- batter_counting_stats(d)
-  ind_stats <- stats |> left_join(x, by="Lineup") |> mutate(BA=getBA(H, AB))
+  ind_stats <- stats |> left_join(x, by="Lineup") |> #mutate(BA=getBA(H, AB))
+    calc_stats(batter_calculations, batter_cols_ind)
   team_stats <- stats |> summarize(across(-c(Lineup), sum)) |>
     mutate(Lineup=NA, Number=NA, Name=teamname) |>
-    mutate(BA=getBA(H, AB)) |>
-    mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
-  bind_rows(ind_stats, team_stats) |>
-    select(any_of(c("Number", "Name", "G", "Lineup")), everything())
+    calc_stats(batter_calculations, batter_cols_team)
+    #mutate(BA=getBA(H, AB)) |>
+    #mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
+  out <- bind_rows(ind_stats, team_stats) |> mutate(G=NA)
+    #select(any_of(c("Number", "Name", "G", "Lineup")), everything())
+  out[c("Number", "Name", "G", "Lineup", batter_cols_team)]
 }
 
 ## PITCHER STATS
@@ -177,8 +208,9 @@ all_stats <- function(games, team) {
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     mutate(Lineup=NA) |>
-    mutate(BA=getBA(H,AB)) |>
-    mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
+    calc_stats(batter_calculations, batter_cols_team)
+    #mutate(BA=getBA(H,AB)) |>
+    #mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
   p.all <- the_game_stats |> filter(Team=="Roseville") |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
@@ -269,10 +301,7 @@ get_all_stats <- function(gs, team) {
 
   all_the_stats$Batting <- all_the_stats$Batting %>%
     mutate(Name=if_else(Name==team, "Team", Name)) |>
-    mutate(BatSum = BA + OBPE + (1-`K/PA`),
-           K.=K, BBHB=BB+HBP, BIP=PA - K - BBHB, H.=H) %>%
-    arrange(desc(BatSum), Number) %>%
-    rename("BA + OBPE + notK/PA:\nBatting Sum" = "BatSum")
+    calc_stats(batter_calculations, batter_cols_total)
   all_the_stats$Pitching <- all_the_stats$Pitching %>%
     mutate(PitchSum = SR + (1-`Opp. OBP`) + (1-`BBHB/BF`),
            K.=K, BBHB=BB+HB, BIP=BF - K - BBHB, H.=H) %>%
