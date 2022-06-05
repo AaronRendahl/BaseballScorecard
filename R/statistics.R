@@ -94,7 +94,9 @@ batter_cols_ind <- c("PA", "H", "AB", "BA", "R", "Blank", "K", "BB", "HBP", "ROE
                      "1B", "2B", "3B", "HR")
 batter_cols_team <- c(batter_cols_ind, "K/PA", "OBPE")
 batter_cols_total <- c(batter_cols_team,
-                       "BA + OBPE + notK/PA:\nBatting Sum", "K.", "BBHB", "BIP", "H.")
+                       "BA + OBPE + notK/PA:\nBatting Sum",
+                       "Blank",
+                       "K.", "BBHB", "BIP", "H.")
 attr(batter_cols_total, "sortby") <- "BA + OBPE + notK/PA:\nBatting Sum"
 
 pitcher_calculations <- list("SR" = "S/P",
@@ -109,7 +111,8 @@ pitcher_cols_ind <- c("IP", "Outs", "BF", "S", "P", "SR", "H", "AB", "K", "BB", 
                       "1B", "2B", "3B", "HR")
 pitcher_cols_team <- c(pitcher_cols_ind, "BBHB/BF", "Opp. OBP")
 pitcher_cols_total <- c(pitcher_cols_team, "SR + notOB + notBBHB:\nPitching Sum",
-                        "Blank", "K.", "BBHB", "BIP", "H.")
+                        "Blank",
+                        "K.", "BBHB", "BIP", "H.")
 attr(pitcher_cols_total, "sortby") <- "SR + notOB + notBBHB:\nPitching Sum"
 
 calc_stats <- function(data, calculations, columns) {
@@ -311,8 +314,10 @@ get_all_stats <- function(gs, team) {
   all_the_stats$Batting <- all_the_stats$Batting %>%
     mutate(Name=if_else(Name==team, "Team", Name)) |>
     calc_stats(batter_calculations, batter_cols_total)
+  all_the_stats$Batting <- all_the_stats$Batting[c("Number", "Name", "G", "Lineup", batter_cols_total)]
   all_the_stats$Pitching <- all_the_stats$Pitching %>%
     calc_stats(pitcher_calculations, pitcher_cols_total)
+  all_the_stats$Pitching <- all_the_stats$Pitching[c("Number", "Name", "G", pitcher_cols_total)]
 
   x$data <- setNames(x$data, x$type)
   xAll <- split(x, x$X) %>% map(pull, "data")
