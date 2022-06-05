@@ -97,6 +97,21 @@ batter_cols_total <- c(batter_cols_team,
                        "BA + OBPE + notK/PA:\nBatting Sum", "K.", "BBHB", "BIP", "H.")
 attr(batter_cols_total, "sortby") <- "BA + OBPE + notK/PA:\nBatting Sum"
 
+pitcher_calculations <- list("SR" = "S/P",
+                             "IP" = "getIP(Outs)",
+                             "BBHB/BF" = "(BB + HB) / BF",
+                             "Opp. OBP" = "(H + BB + HB) / BF",
+                             "SR + notOB + notBBHB:\nPitching Sum" = "SR + (1-`Opp. OBP`) + (1-`BBHB/BF`)",
+                             K.="K", BBHB="BB+HB", BIP="BF - K - BBHB", H.="H",
+                             "Blank" = NA) |>
+  lapply(function(x) parse(text=x))
+pitcher_cols_ind <- c("IP", "Outs", "BF", "S", "P", "SR", "H", "AB", "K", "BB", "HB", "ROE",
+                      "1B", "2B", "3B", "HR")
+pitcher_cols_team <- c(pitcher_cols_ind, "BBHB/BF", "Opp. OBP")
+pitcher_cols_total <- c(pitcher_cols_team, "SR + notOB + notBBHB:\nPitching Sum",
+                        "Blank", "K.", "BBHB", "BIP", "H.")
+attr(pitcher_cols_total, "sortby") <- "SR + notOB + notBBHB:\nPitching Sum"
+
 calc_stats <- function(data, calculations, columns) {
   ok <- intersect(names(calculations), columns)
   for(n in ok) {
@@ -150,9 +165,8 @@ pitcher_counting_stats <- function(d) {
     mutate(Strikes = Strikes + (Pitch == "Strike"), Balls = Balls + (Pitch == "Ball")) |>
     mutate(Order = as.integer(as_factor(paste(Pitcher)))) |>
     group_by(Order, Pitcher) |> summarize(
-      G=NA, IP=NA,
       Outs=sum(Out), BF=sum(Outcome!="_"),
-      S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls), SR=NA,
+      S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls),
       H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)),
       K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
       ROE=sum(Outcome=="E"),
@@ -173,13 +187,13 @@ pitcher_stats <- function(game, rosters, who=c("away", "home")) {
     x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
   }
   stats <- pitcher_counting_stats(d)
-  ind_stats <- stats |> mutate(SR=S/P, IP=getIP(Outs)) |> left_join(x, by="Number")
+  ind_stats <- stats |> left_join(x, by="Number") |>
+    calc_stats(pitcher_calculations, pitcher_cols_ind)
   team_stats <- stats |> summarize(across(-c(Number, Order), sum)) |>
     mutate(Number=NA, Order=Inf, Name="Team") |>
-    mutate(SR=S/P, IP=getIP(Outs)) |>
-    mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF)
-  bind_rows(ind_stats, team_stats) |> arrange(Order) |> select(-Lineup, -Order) |>
-    select(any_of(c("Number", "Name")), everything())
+    calc_stats(pitcher_calculations, pitcher_cols_team)
+  out <- bind_rows(ind_stats, team_stats) |> arrange(Order) |> mutate(G=NA)
+  out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
 readgame <- function(file) {
@@ -210,8 +224,7 @@ all_stats <- function(games, team) {
   p.all <- the_game_stats |> filter(Team=="Roseville") |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
-    mutate(SR=S/P, IP=getIP(Outs)) |>
-    mutate("BBHB/BF"=(BB+HB)/BF, "Opp. OBP"=(H+BB+HB)/BF)
+    calc_stats(pitcher_calculations, pitcher_cols_team)
   list(Batting=b.all, Pitching=p.all)
 }
 
@@ -299,10 +312,7 @@ get_all_stats <- function(gs, team) {
     mutate(Name=if_else(Name==team, "Team", Name)) |>
     calc_stats(batter_calculations, batter_cols_total)
   all_the_stats$Pitching <- all_the_stats$Pitching %>%
-    mutate(PitchSum = SR + (1-`Opp. OBP`) + (1-`BBHB/BF`),
-           K.=K, BBHB=BB+HB, BIP=BF - K - BBHB, H.=H) %>%
-    arrange(desc(PitchSum)) %>%
-    rename("SR + notOB + notBBHB:\nPitching Sum" = "PitchSum")
+    calc_stats(pitcher_calculations, pitcher_cols_total)
 
   x$data <- setNames(x$data, x$type)
   xAll <- split(x, x$X) %>% map(pull, "data")
