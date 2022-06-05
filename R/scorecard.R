@@ -529,7 +529,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   }
 
   on.exit(dev.off())
-  message(pages)
+  #message(pages)
   if(pages=="one") {
     pdf(file, width=page.width*2, height=page.height)
     gf <- frameGrob(layout=grid.layout(ncol=2))
