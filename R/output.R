@@ -89,6 +89,8 @@ addDataList <- function(wb, sheet, x, format=fmt) {
         #   class(xi$when) <- "hyperlink"
         # }
       }
+      ## fix any duplicated names
+      xi <- as_tibble(xi, .name_repair="unique")
       ## Determine which columns are all missing. Specifically should be these:
       ## c("Lineup", "Number", "Name", "G", "BA")
       kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
@@ -149,7 +151,7 @@ toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$
   if(!missing(subdir)) { dir <- file.path(dir, subdir) }
   if(str_detect(file, "xlsx$")) {
     dimxl <- function(path, sheet) {
-      x <- readxl::read_excel(path=path, sheet=sheet, col_names=FALSE)
+      x <- readxl::read_excel(path=path, sheet=sheet, col_names=FALSE, .name_repair="minimal")
       dim(x) |> setNames(c("rows", "cols"))
     }
     out <- drive_put(file, file.path(dir, newfile), type="spreadsheet")
