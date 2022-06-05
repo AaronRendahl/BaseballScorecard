@@ -51,16 +51,16 @@ addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
 ## get desired number format for each column
 tmp1 <- tibble(name=c("IP",
                        "BA", "Opp. OBP", "OBPE", "SLG",
-                       "BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
+                       "SLG + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
                        "Contact/AB", "Hard/AB", "Hard/Contact",
-                       "SR", "K/PA", "BBHB/BF"),
-                 numFmt=c("0.0", rep("0.000", 9), rep("0%", 3)))
+                       "SR", "SR.", "K/PA", "BBHB/BF"),
+                 numFmt=c("0.0", rep("0.000", 9), rep("0%", 4)))
 
 tmp2 <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP", "SLG"), width=8),
-                tibble(name=c("SR", "K/PA"), width=7),
+                tibble(name=c("SR", "SR.", "K/PA"), width=7),
                 tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
                 tibble(name=c("Contact", "Contact/AB", "Hard/AB", "Hard/Contact"), width=c(8, 10, 10, 12)),
-                tibble(name=c("BA + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum"), width=20),
+                tibble(name=c("SLG + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum"), width=20),
                 tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
 
 fmt <- full_join(tmp1, tmp2)
