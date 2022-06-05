@@ -113,9 +113,8 @@ calc_stats <- function(data, calculations, columns) {
 batter_counting_stats <- function(d) {
   d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
     group_by(Lineup) |> summarize(
-      #G=NA,
       PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), #BA=NA,
-      R=sum(ToBase==4), #Blank=NA,
+      R=sum(ToBase==4),
       K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
       ROE=sum(Outcome=="E"),
       `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
