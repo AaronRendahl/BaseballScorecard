@@ -80,19 +80,8 @@ getIP <- function(x) {
   b <- x %% 3
   a + b/10
 }
-## BATTER STATS
-batter_counting_stats <- function(d) {
-  d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
-    group_by(Lineup) |> summarize(
-      #G=NA,
-      PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), #BA=NA,
-      R=sum(ToBase==4), #Blank=NA,
-      K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
-      ROE=sum(Outcome=="E"),
-      `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-      .groups="drop")
-}
 
+## STATS CALCULATIONS
 batter_calculations <- list("BA" = "getBA(H, AB)",
                             "K/PA" = "K / PA",
                             "OBPE" = "(H + BB + HBP + ROE) / PA",
@@ -120,6 +109,19 @@ calc_stats <- function(data, calculations, columns) {
   data
 }
 
+## BATTER STATS
+batter_counting_stats <- function(d) {
+  d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
+    group_by(Lineup) |> summarize(
+      #G=NA,
+      PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), #BA=NA,
+      R=sum(ToBase==4), #Blank=NA,
+      K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
+      ROE=sum(Outcome=="E"),
+      `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
+      .groups="drop")
+}
+
 batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
   who <- match.arg(who)
   i <- match(who, c("away", "home"))
@@ -137,10 +139,7 @@ batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
   team_stats <- stats |> summarize(across(-c(Lineup), sum)) |>
     mutate(Lineup=NA, Number=NA, Name=teamname) |>
     calc_stats(batter_calculations, batter_cols_team)
-    #mutate(BA=getBA(H, AB)) |>
-    #mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
   out <- bind_rows(ind_stats, team_stats) |> mutate(G=NA)
-    #select(any_of(c("Number", "Name", "G", "Lineup")), everything())
   out[c("Number", "Name", "G", "Lineup", batter_cols_team)]
 }
 
@@ -209,8 +208,6 @@ all_stats <- function(games, team) {
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     mutate(Lineup=NA) |>
     calc_stats(batter_calculations, batter_cols_team)
-    #mutate(BA=getBA(H,AB)) |>
-    #mutate("K/PA"=K/PA, OBPE=(H+BB+HBP+ROE)/PA)
   p.all <- the_game_stats |> filter(Team=="Roseville") |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
