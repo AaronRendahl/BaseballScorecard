@@ -85,6 +85,7 @@ getIP <- function(x) {
 batter_calculations <- list("BA" = "getBA(H, AB)",
                             "K/PA" = "K / PA",
                             "OBPE" = "(H + BB + HBP + ROE) / PA",
+                            "SLG" = "(`1B` + 2*`2B` + 3*`3B` + 4*`HR`) / AB",
                             "BA + OBPE + notK/PA:\nBatting Sum" = "BA + OBPE + (1 - `K/PA`)",
                             K.="K", BBHB="BB+HBP", BIP="PA - K - BBHB", H.="H",
                             "Blank" = NA) |>
@@ -92,7 +93,7 @@ batter_calculations <- list("BA" = "getBA(H, AB)",
 
 batter_cols_ind <- c("PA", "H", "AB", "BA", "R", "Blank", "K", "BB", "HBP", "ROE",
                      "1B", "2B", "3B", "HR")
-batter_cols_team <- c(batter_cols_ind, "K/PA", "OBPE")
+batter_cols_team <- c(batter_cols_ind, "SLG", "K/PA", "OBPE")
 batter_cols_total <- c(batter_cols_team,
                        "BA + OBPE + notK/PA:\nBatting Sum",
                        "Blank",
@@ -109,7 +110,7 @@ pitcher_calculations <- list("SR" = "S/P",
   lapply(function(x) parse(text=x))
 pitcher_cols_ind <- c("IP", "Outs", "BF", "S", "P", "SR", "H", "AB", "K", "BB", "HB", "ROE",
                       "1B", "2B", "3B", "HR")
-pitcher_cols_team <- c(pitcher_cols_ind, "BBHB/BF", "Opp. OBP")
+pitcher_cols_team <- c(pitcher_cols_ind, "Blank", "BBHB/BF", "Opp. OBP")
 pitcher_cols_total <- c(pitcher_cols_team, "SR + notOB + notBBHB:\nPitching Sum",
                         "Blank",
                         "K.", "BBHB", "BIP", "H.")
