@@ -1,6 +1,6 @@
 ######
 ## output to Excel file
-addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
+addData <- function(wb, sheet, dat, header, row) {
   about <- dat |> select(starts_with("."))
   dat <- dat |> select(!starts_with("."))
   ## put header in first desired row and bold it
@@ -40,12 +40,22 @@ addData <- function(wb, sheet, dat, header, row, numFmt=NA) {
     }
   }
   ## format columns
-  for(idx in which(!is.na(numFmt))) {
-    addStyle(wb, sheet, createStyle(numFmt=numFmt[idx]),
+  getattr <- function(x, n) {
+    out <- sapply(x, function(v) attr(v, n))
+    out[sapply(out, is.null)] <- NA
+    unlist(out)
+  }
+  #numFmts <- sapply(dat, function(v) attr(v, "numFmt"))
+  #numFmts[sapply(numFmts, is.null)] <- NA
+  #numFmts <- unlist(numFmts)
+  numFmts <- getattr(dat, "numFmt")
+  for(idx in which(!is.na(numFmts))) {
+    addStyle(wb, sheet, createStyle(numFmt=numFmts[idx]),
              cols=idx, rows=(1 + row + 1:nrow(dat)),
              gridExpand=TRUE, stack=TRUE)
   }
-  wb
+  ## return widths
+  getattr(dat, "width")
 }
 
 ## get desired number format for each column
@@ -66,61 +76,75 @@ tmp2 <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP", "SLG"),
 fmt <- full_join(tmp1, tmp2)
 rm(tmp1, tmp2)
 
-addDataList <- function(wb, sheet, x, format=fmt) {
+prepDataList <- function(x, format=fmt) {
+  fix1 <- function(xi) {
+    ## remove Outs from output now that have IP
+    xi$Outs <- NULL
+    ## add scorecard links as hyperlinks to "when" column
+    #link <- NULL
+    if(!is.null(xi$scorecard_link)) {
+      xi$.hyperlink.when <- xi$scorecard_link
+      #link <- xi$scorecard_link
+      xi$scorecard_link <- NULL
+      # if("when" %in% names(xi)) {
+      #   names(link) <- xi$when
+      #   xi$when <- link
+      #   class(xi$when) <- "hyperlink"
+      # }
+    }
+    ## fix any duplicated names
+    xi <- as_tibble(xi, .name_repair="unique")
+    ## Determine which columns are all missing. Specifically should be these:
+    ## c("Lineup", "Number", "Name", "G", "BA")
+    kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
+    ## for certain counting stats replace zeros with blanks
+    xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
+    ## now set name blank for anything that is all missing.
+    ## this needs to be last because can't use tidyverse functions with duplicate names
+    names(xi)[kk] <- map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
+    ## which rows should be bold
+    boldrows <- NULL
+    if("Name" %in% names(xi)) {
+      k <- which(xi$Name=="Team")
+      if(length(k)==1) {
+        boldrows <- k
+      }
+      xi$.textDecoration <- NA
+      xi$.textDecoration[k] <- "bold"
+    }
+    if("about" %in% names(xi)) {
+      k <- which(xi$about=="Season")
+      if(length(k)==1) {
+        boldrows <- k
+      }
+      xi$.textDecoration <- NA
+      xi$.textDecoration[k] <- "bold"
+    }
+    for(n in names(xi)) {
+      if(n %in% fmt$name) {
+        attr(xi[[n]], "numFmt") <- fmt$numFmt[fmt$name==n]
+        attr(xi[[n]], "width") <- fmt$width[fmt$name==n]
+      }
+    }
+    xi
+  }
+  lapply(x, function(y) lapply(y, fix1))
+}
+
+addDataList <- function(wb, sheet, x, width.default=5) {
   ## count how many rows needed for each part
   ## for data frame need to count title and header row (so +2)
   nr <- sapply(x, function(x) {if(is.data.frame(x)) nrow(x) + 2 else length(x) })
   ## the +1 is for a space between them
   row <- lag(1 + cumsum(nr + 1), default=1)
+  widths <- NULL
   for(i in seq_along(x)) {
     xi <- x[[i]]
     if(is.data.frame(xi)) {
-      ## remove Outs from output now that have IP
-      xi$Outs <- NULL
-      ## add scorecard links as hyperlinks to "when" column
-      #link <- NULL
-      if(!is.null(xi$scorecard_link)) {
-        xi$.hyperlink.when <- xi$scorecard_link
-        #link <- xi$scorecard_link
-        xi$scorecard_link <- NULL
-        # if("when" %in% names(xi)) {
-        #   names(link) <- xi$when
-        #   xi$when <- link
-        #   class(xi$when) <- "hyperlink"
-        # }
-      }
-      ## fix any duplicated names
-      xi <- as_tibble(xi, .name_repair="unique")
-      ## Determine which columns are all missing. Specifically should be these:
-      ## c("Lineup", "Number", "Name", "G", "BA")
-      kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
-      ## for certain counting stats replace zeros with blanks
-      xi <- mutate(xi, across(any_of(c("HBP", "HB", "1B", '2B', '3B', 'HR','ROE')), function(x) {x[x==0] <- NA; x}))
-      ## now set name blank for anything that is all missing.
-      ## this needs to be last because can't use tidyverse functions with duplicate names
-      names(xi)[kk] <- map_chr(seq_along(kk), ~paste(rep(" ",.), collapse="")) ## if need to be unique
-      ## save the resulting data sheet in the original list
-      x[[i]] <- xi
-      ## which rows should be bold
-      boldrows <- NULL
-      if("Name" %in% names(xi)) {
-        k <- which(xi$Name=="Team")
-        if(length(k)==1) {
-          boldrows <- k
-        }
-      }
-      if("about" %in% names(xi)) {
-        k <- which(xi$about=="Season")
-        if(length(k)==1) {
-          boldrows <- k
-        }
-      }
-      xi$.textDecoration <- NA
-      xi$.textDecoration[k] <- "bold"
-      numFmts <- fmt$numFmt[match(names(xi), fmt$name)]
       ## now add to the spreadsheet
-      wb <- addData(wb, sheet, xi, names(x)[i], row=row[i],
-                    numFmt=numFmts)
+      wi <- addData(wb, sheet, xi, names(x)[i], row=row[i])
+      ## save widths so can get best width later
+      widths <- bind_rows(widths, tibble(col=seq_along(wi), width=wi))
     } else {
       for(j in seq_along(xi)) {
         writeData(wb, sheet, xi[[j]], startRow=row[i]+j-1, startCol=1)
@@ -128,10 +152,7 @@ addDataList <- function(wb, sheet, x, format=fmt) {
       }
     }
   }
-  w0 <- 5
-  xdf <- x[sapply(x, is.data.frame)]
-  ws <- purrr::map(xdf, ~tibble(col=1:ncol(.), name=names(.))) |> bind_rows() |>
-    left_join(fmt, by="name") |> mutate(width=replace_na(width, w0)) |>
+  ws <- widths |> mutate(width=replace_na(width, width.default)) |>
     group_by(col) |> summarize(width=max(width), .groups="drop") |> arrange(col)
   setColWidths(wb, sheet, cols = ws$col, widths = ws$width)
   wb
@@ -141,7 +162,7 @@ statsToExcel <- function(out, filename) {
   wb <- createWorkbook()
   for(n in names(out)) {
     addWorksheet(wb, n)
-    wb <- addDataList(wb, n, out[[n]])
+    addDataList(wb, n, out[[n]])
   }
   saveWorkbook(wb, filename, overwrite = TRUE)
 }
