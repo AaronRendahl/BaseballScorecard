@@ -18,6 +18,7 @@ rm(tmp1, tmp2)
 
 prepDataList <- function(x, format=fmt) {
   fix1 <- function(xi) {
+    if(!is.data.frame(xi)) return(xi)
     ## remove Outs from output now that have IP
     xi$Outs <- NULL
     ## add scorecard links as hyperlinks to "when" column
