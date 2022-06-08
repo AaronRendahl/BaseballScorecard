@@ -110,8 +110,9 @@ pitcher_calculations <- list("SR" = "S/P", "SR." = "S/P",
   lapply(function(x) parse(text=x))
 pitcher_cols_ind <- c("IP", "Outs", "BF", "S", "P", "SR", "H", "AB", "K", "BB", "HB", "ROE",
                       "1B", "2B", "3B", "HR")
-pitcher_cols_team <- c(pitcher_cols_ind, "SR.", "Opp. OBP", "BBHB/BF")
-pitcher_cols_total <- c(pitcher_cols_team, "SR + notOB + notBBHB:\nPitching Sum",
+pitcher_cols_team <- c(pitcher_cols_ind, "SR.", "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
+pitcher_cols_ind <- pitcher_cols_team
+pitcher_cols_total <- c(pitcher_cols_team,
                         "Blank",
                         "K.", "BBHB", "BIP", "H.")
 attr(pitcher_cols_total, "sortby") <- "SR + notOB + notBBHB:\nPitching Sum"
