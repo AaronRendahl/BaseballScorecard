@@ -12,7 +12,7 @@
 
 scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                       pages=c("one", "two"), nthem=12,
-                      team_name="Roseville", pitcher_rest="") {
+                      team_name="Roseville", pitcher_rest="", ninnings=7, nextra=2) {
   pages <- match.arg(pages)
 
   blank <- missing(game)
@@ -42,7 +42,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   leftlabelsize <- 9
   pitchcountsize <- 8
 
-  ncol <- 8
+  ncol <- ninnings + nextra
 
   basedotcolor <- "gray50"
   numbercolor <- "gray50"
