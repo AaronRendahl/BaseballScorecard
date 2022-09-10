@@ -85,11 +85,12 @@ addDataList <- function(wb, sheet, x, width.default=5) {
   wb
 }
 
-statsToExcel <- function(out, filename) {
+statsToExcel <- function(out, filename, freeze=NULL) {
   wb <- createWorkbook()
   for(n in names(out)) {
     addWorksheet(wb, n)
     addDataList(wb, n, out[[n]])
+    if(n %in% names(freeze)) freezePane(wb, n, firstActiveCol=freeze[n])
   }
   saveWorkbook(wb, filename, overwrite = TRUE)
 }
