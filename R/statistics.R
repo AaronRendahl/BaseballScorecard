@@ -295,10 +295,9 @@ makestatsfile <- function(game, team, filename) {
 
 get_all_stats <- function(gs, team) {
   all_the_stats <- all_stats(gs, team=team)
-  the_game_stats <- gs |> select(about, when, code, stats) |> unnest(stats) |>
-    left_join(scorecard_list, by="code")
+  the_game_stats <- gs |> select(about, when, code, stats, any_of('scorecard_link')) |> unnest(stats)
   batting_stats <- the_game_stats |> filter(Team==team) |>
-    select(about, when, scorecard_link, vs, Batter_Stats) |> unnest(Batter_Stats) |>
+    select(about, when, any_of('scorecard_link'), vs, Batter_Stats) |> unnest(Batter_Stats) |>
     mutate(type="Batting") |>
     bind_rows(all_the_stats$Batting %>% mutate(type="Batting", about="Season")) %>%
     mutate(Name=if_else(Name==team, "Team", Name)) %>%
@@ -306,7 +305,7 @@ get_all_stats <- function(gs, team) {
     mutate(X=as_factor(if_else(!is.na(Number), paste(Number, Name), Name))) %>%
     nest(data=c(-X, -type))
   pitching_stats <- the_game_stats |> filter(Team==team) |>
-    select(about, when, scorecard_link, vs, Pitcher_Stats) |> unnest(Pitcher_Stats) |>
+    select(about, when, any_of('scorecard_link'), vs, Pitcher_Stats) |> unnest(Pitcher_Stats) |>
     mutate(type="Pitching") |>
     bind_rows(all_the_stats$Pitching %>% mutate(type="Pitching", about="Season")) %>%
     mutate(NumberX=replace_na(Number, -1)) %>% arrange(NumberX) %>% select(-NumberX) %>%
