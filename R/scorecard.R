@@ -258,11 +258,11 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       return(gf)
     } else {
       npitchers <- 6
-      pwidth <- 3/8
       heights2 <- c(0.2,rep(1/npitchers, npitchers),0.2)
       leftcols <- left.width * c(.5, .4, .1)
       nleftcols <- length(leftcols)
-      npinnings <- 6
+      npinnings <- ninnings
+      pwidth <- 1/ncol/2*npinnings
       widths2 <- c(leftcols, rep(main.width*pwidth/npinnings, npinnings), main.width*(1-pwidth))
       lx2 <- grid.layout(ncol=length(widths2),
                          nrow=length(heights2),
@@ -289,7 +289,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
         box <- rectGrob(gp=gpar(lwd=0.25))
         gf2 <- placeGrob(gf2, box, row=j+1, col=nleftcols+i)
       }
-      for(i in 1:6) {
+      for(i in 1:npinnings) {
         gf2 <- placeGrob(gf2, row=1, col=nleftcols+i,
                          grob=textGrob(i, y=unit(3, "pt"), just="bottom",
                                        gp=gpar(fontsize=inningtextsize)))
@@ -371,19 +371,22 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                  gp=gpar(fontsize=14))
       }
     } else if(header=="score"){
-      xw <- 0.25
-      xx <- (1 - xw) + xw/7*(1:7) - xw/14
+      np1 <- ninnings+1
+      xw <- 0.25/7*np1
+
+      xx <- (1 - xw) + xw/np1*(1:np1) - xw/(2*np1)
       yy <- c(.675, .425)
-      a2 <- textGrob(c(1:6,"R"), x = xx, y=0.85, just="bottom",
+      a2 <- textGrob(c(1:ninnings,"R"), x = xx, y=0.85, just="bottom",
                      gp=gpar(fontsize=inningtextsize))
-      xs <- (1 - xw) + xw/7*(0:7)
+      xs <- (1 - xw) + xw/np1*(0:np1)
       a3 <- segmentsGrob(x0=xs, x1=xs, y0=0.3, y1=0.8, gp=gpar(lwd=0.25))
       ys <- c(0.3, 0.55, 0.8)
       a4 <- segmentsGrob(x0=.65, x1=1, y0=ys, y1=ys, gp=gpar(lwd=0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
         score <- get_score(game) |> as.data.frame() |>
-          rownames_to_column("team") |> rename(`7`="R")
+          rownames_to_column("team")
+        names(score)[ncol(score)] <- "R"
         teams <- score$team
         score$team <- 1:2
         score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
@@ -427,7 +430,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
     gf <- NULL
     gf <- frameGrob(layout=grid.layout(nrow = nrow, ncol=ncol))
     if(missing(d)) {
-      inning_list=tibble(Inning=1:6, X=1:6)
+      inning_list=tibble(Inning=1:ninnings, X=1:ninnings)
       onebox <- makebox(basesize=basesize)
       for(i in seq_len(nrow)) for (j in seq_len(ncol)) {
         gf <- placeGrob(gf, onebox, row=i, col=j)
