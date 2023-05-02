@@ -11,7 +11,7 @@
 
 
 scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
-                      pages=c("one", "two"), nthem=12,
+                      pages=c("one", "two"), n_them=12, n_us=12,
                       team_name="Roseville", pitcher_rest="", ninnings=7, nextra=2) {
   pages <- match.arg(pages)
 
@@ -516,9 +516,9 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   }
 
   if(missing(game)) {
-    gf1 <- makeside(header="score", team="Roseville", nrow=12)
+    gf1 <- makeside(header="score", team="Roseville", nrow=n_us)
     ## gf1 <- makeside(header="score", nrow=9) ## team="Roseville", nrow=12) ## for blank/9
-    gf2 <- makeside(header="about", nrow=nthem)
+    gf2 <- makeside(header="about", nrow=n_them)
   } else {
     tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
     nr <- max(c(tmp$Lineup,11))
