@@ -386,9 +386,8 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       if(!missing(game)) {
         score <- get_score(game) |> as.data.frame() |>
           rownames_to_column("team")
-        names(score)[ncol(score)] <- "R"
+        names(score)[ncol(score)] <- ninnings+1
         teams <- score$team
-        score$team <- 1:2
         score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
           mutate(inning=as.integer(inning)) |>
           mutate(xx = xx[inning], yy=yy[team]) |>
