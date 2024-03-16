@@ -1,7 +1,7 @@
 Package: BaseballScorecard
 Type: Package
 Title: Custom Baseball Scorecards and Statistics
-Version: 0.1.0.9999
+Version: 1.0.0
 Author: Aaron Rendahl <rendahla@gmail.com>
 Maintainer: Aaron Rendahl <rendahla@gmail.com>
 Description: Creates custom baseball scorecards and statistics
