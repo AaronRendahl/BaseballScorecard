@@ -136,8 +136,8 @@ batter_counting_stats <- function(d) {
     group_by(Lineup) |> summarize(
       PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), #BA=NA,
       R=sum(ToBase==4),
-      K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
-      ROE=sum(Outcome=="E"),
+      K=sum(Outcome %in% c("K", "Kd")), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
+      ROE=sum(Outcome %in% c("E", "Kd")),
       `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
       .groups="drop")
 }
@@ -174,8 +174,8 @@ pitcher_counting_stats <- function(d) {
       Outs=sum(Out), BF=sum(Outcome!="_"),
       S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls),
       H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)),
-      K=sum(Outcome=="K"), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
-      ROE=sum(Outcome=="E"),
+      K=sum(Outcome %in% c("K", "Kd")), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
+      ROE=sum(Outcome %in% c("E", "Kd")),
       `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
       .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
 }
