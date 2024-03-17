@@ -63,7 +63,10 @@ makedata <- function(d) {
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
            OutDuring=get_OutDuring(B2, B3, B4),
            RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring)) |>
-    mutate(across(c("B2", "B3", "B4"), stringr::str_remove, pattern="^X")) |>
+    mutate(across(c("B2", "B3", "B4"), \(x) {
+      ## .0$ is in case Google to xlsx adds a .0 to numbers
+      x |> stringr::str_remove(pattern="^X") |> stringr::str_remove(pattern="\\.0$")
+    })) |>
     mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome))
 }
 
@@ -202,7 +205,7 @@ pitcher_stats <- function(game, rosters, who=c("away", "home")) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-readgame <- function(file) {
+readgame <- function(file, gamecode="^Game_([0-9a-z]+)\\..*") {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
@@ -212,7 +215,10 @@ readgame <- function(file) {
   stopifnot(names(g1)[2:3] %in% ss[2:3])
   g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata()
   g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata()
-  tibble(when=when, about=about, lineup=list(g1), away=list(g1_away), home=list(g1_home))
+  tibble(when=when, about=about, lineup=list(g1), away=list(g1_away), home=list(g1_home)) |>
+    mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
+           code = stringr::str_replace(basename(file), gamecode,"\\1"),
+           datetime=lubridate::mdy_hm(when))
 }
 
 readrosters <- function(file) {
