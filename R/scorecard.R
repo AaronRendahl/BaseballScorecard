@@ -12,7 +12,8 @@
 
 scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                       pages=c("one", "two"), n_them=12, n_us=12,
-                      team_name="Roseville", pitcher_rest="", ninnings=7, nextra=2) {
+                      team_name="Roseville", pitcher_rest="", ninnings=7, nextra=2,
+                      logos=list()) {
   pages <- match.arg(pages)
 
   blank <- missing(game)
@@ -394,15 +395,24 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       }
       out
     }
-    name <- if(!is.na(team) && team=="Roseville") {
-        logo <- rasterGrob(Roseville_Logo, x=0, y=1, height=0.9,
-                           just=c("left", "top"))
-        rose <- textGrob(team_name,
-                         x=unit(1,"snpc"),
-                         y=0.55,
-                         just=c("left", "center"),
-                         gp=gpar(fontsize=14))
-        gTree(children=gList(logo, rose))
+    name <- if(!is.na(team) && team==team_name) {
+      if(team_name %in% names(logos)) {
+        teamlogo <- rasterGrob(logos[[team_name]], x=0, y=1, height=0.9,
+                               just=c("left", "top"))
+        teamtext <- textGrob(team_name,
+                             x=unit(1,"snpc"),
+                             y=0.55,
+                             just=c("left", "center"),
+                             gp=gpar(fontsize=14))
+        gTree(children=gList(teamlogo, teamtext))
+      } else {
+        teamtext <- textGrob(team_name,
+                             x=unit(0,"snpc"),
+                             y=0.55,
+                             just=c("left", "center"),
+                             gp=gpar(fontsize=14))
+        gTree(children=gList(teamtext))
+      }
     } else if(is.na(team)) {
       textGrob("@\nvs.",
                        x=0,
@@ -484,7 +494,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       if(team %in% names(rosters)) {
         lineup <- left_join(lineup, rosters[[team]], by="Number")
       }
-      header.grob <- upper(game, team=team, who=who)
+      header.grob <- upper(game, team=team, who=who, header=header)
       main.grob <- mainbox(g, lineup, nrow=nrow)
       footer.grob <- lower(g)
     } else {
@@ -515,16 +525,15 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
     tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
     nr <- max(c(tmp$Lineup,11))
     if(team_name==names(game$lineup)[3]) {
-      gf1 <- makeside(game, "home", nrow=nr)
-      gf2 <- makeside(game, "away", nrow=nr)
+      gf1 <- makeside(game, "home", nrow=nr, header="score")
+      gf2 <- makeside(game, "away", nrow=nr, header="about")
     } else {
-      gf1 <- makeside(game, "away", nrow=nr)
-      gf2 <- makeside(game, "home", nrow=nr)
+      gf1 <- makeside(game, "away", nrow=nr, header="score")
+      gf2 <- makeside(game, "home", nrow=nr, header="about")
     }
   }
 
   on.exit(dev.off())
-  #message(pages)
   dir <- dirname(file)
   if(!dir.exists(dir)) { dir.create(dir) }
   if(pages=="one") {
