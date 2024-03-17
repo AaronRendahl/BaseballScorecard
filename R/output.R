@@ -15,11 +15,13 @@ addData <- function(wb, sheet, dat, header, row) {
   addStyle(wb, sheet, createStyle(textDecoration="bold", halign="right"),
            cols=which(isNum), rows=row+1)
   ## add textDecoration
-  if(!is.null(about$.textDecoration) && any(!is.na(about$.textDecoration))) {
-    for(k in which(!is.na(about$.textDecoration))) {
-      addStyle(wb, sheet, createStyle(textDecoration=about$.textDecoration[k]),
-               cols = seq_len(ncol(dat)), rows = row + 1 + k)
-    }
+  textD <- about |> bind_rows(tibble(.textDecoration=character())) |>
+    select(.textDecoration) |>
+    mutate(row=row + 1 + 1:n()) |>
+    filter(!is.na(.textDecoration))
+  for(idx in seq_len(nrow(textD))) {
+    addStyle(wb, sheet, createStyle(textDecoration=textD$.textDecoration[idx]),
+             cols = seq_len(ncol(dat)), rows = textD$row[idx])
   }
   ## add hyperlinks
   h <- about |> select(starts_with(".hyperlink"))
