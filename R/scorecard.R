@@ -351,11 +351,6 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                     team=NA, who=c("home", "away")) {
     header <- match.arg(header)
     who <- match.arg(who)
-    if(!is.na(team) && team=="Roseville") {
-      header <- "score"
-    } else {
-      header <- "about"
-    }
     dt <- if(header=="about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
