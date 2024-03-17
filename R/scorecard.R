@@ -300,6 +300,7 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                     team=NA, who=c("home", "away")) {
     header <- match.arg(header)
     who <- match.arg(who)
+    vs <- case_when(header=="score" ~ "", who=="home" ~ "@ ", who=="away" ~ "v. ", TRUE ~ "")
     dt <- if(header=="about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
@@ -343,23 +344,19 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
       }
       out
     }
-    name <- if(!is.na(team) && team==team_name) {
-      if(team_name %in% names(logos)) {
-        teamlogo <- rasterGrob(logos[[team_name]], x=0, y=1, height=0.9,
+    name <- if(!is.na(team)) {
+      haslogo <- team %in% names(logos)
+      teamtext <- textGrob(paste0(vs, team),
+                           x=unit(1*haslogo,"snpc"),
+                           y=0.55,
+                           just=c("left", "center"),
+                           gp=gpar(fontsize=14))
+      if(haslogo) {
+        teamlogo <- rasterGrob(logos[[team]], x=0, y=1, height=0.9,
                                just=c("left", "top"))
-        teamtext <- textGrob(team_name,
-                             x=unit(1,"snpc"),
-                             y=0.55,
-                             just=c("left", "center"),
-                             gp=gpar(fontsize=14))
         gTree(children=gList(teamlogo, teamtext))
       } else {
-        teamtext <- textGrob(team_name,
-                             x=unit(0,"snpc"),
-                             y=0.55,
-                             just=c("left", "center"),
-                             gp=gpar(fontsize=14))
-        gTree(children=gList(teamtext))
+        teamtext
       }
     } else if(is.na(team)) {
       textGrob("@\nvs.",
@@ -367,12 +364,6 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                        y=unit(1,"npc")-unit(margin.top,"inches"),
                        just=c("left", "top"),
                        gp=gpar(fontsize=headertextsize))
-    } else {
-      textGrob(paste(if(who=="home") { "@" } else { "v." }, team),
-               x=0,
-               y=0.55,
-               just=c("left", "center"),
-               gp=gpar(fontsize=14))
     }
     gTree(children=gList(dt, name))
   }
