@@ -221,7 +221,7 @@ pitcher_stats <- function(game, rosters, who=c("away", "home")) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-readgame <- function(file, rosters, gamecode="^Game_([0-9a-z]+)\\..*") {
+readgame <- function(file, rosters, gamecode) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
@@ -237,6 +237,36 @@ readgame <- function(file, rosters, gamecode="^Game_([0-9a-z]+)\\..*") {
            datetime=lubridate::mdy_hm(when))
   out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
   out
+}
+
+readgames <- function(files, rosters, team=c(), bydate=c(), gamecode="^Game_([0-9a-z]+)\\..*", maxg=8,
+                      allowchar=FALSE) {
+  # a little function to separate the GSBL games into 1-8 and 9-16
+  tog <- function(x, n) {
+    if(max(x) <=n) return("")
+    k <- ((x-1) %/% n)*n
+    sprintf(" %d-%d", k+1, k+n)
+  }
+  gs <- tibble(datafile=files) |>
+    mutate(map_dfr(datafile, readgame, rosters=rosters, gamecode=gamecode)) |>
+    arrange(code) |>
+    mutate(group=paste0(about, tog(1:n(), maxg)), .by=about) |>
+    mutate(order=1:n(), .by=about) |>
+    mutate(who = map_chr(lineup, ~setdiff(names(.)[2:3], team))) |>
+    mutate(name=sprintf("%s %s", if_else(about %in% bydate,
+                                         format(datetime, "%m-%e") |> str_remove("^0") |> str_remove_all(" "),
+                                         paste("Game", order)), who)) |>
+    select(-datafile, -order, -who)
+  ## allow for numbers to be characters
+  if(allowchar) {
+    for(i in 1:nrow(gs)) {
+      gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
+      gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
+      gs$home[[i]]$Pitcher <- as.character(gs$home[[i]]$Pitcher)
+      gs$away[[i]]$Pitcher <- as.character(gs$away[[i]]$Pitcher)
+    }
+  }
+  gs
 }
 
 readrosters <- function(file) {
@@ -316,6 +346,20 @@ makestatsfile <- function(game, team, filename) {
   invisible(out)
 }
 
+makeallstatsfiles <- function(gs, team) {
+  havelinks <- "scorecard_link" %in% names(gs)
+  gs |> mutate(out=map(seq_len(nrow(gs)), function(idx) {
+      g <- gs[idx,]
+      tmp <- makestatsfile(g, team)
+      link <- NULL
+      if(havelinks) {
+        link <- scorecard_link[idx]
+        names(link) <- "LINK TO SCORECARD"
+        class(link) <- "hyperlink"
+      }
+      list(header=list(sprintf("%s, %s", g$vs, g$when), link)) |> c(tmp)
+    }))
+}
 
 get_all_stats <- function(gs, team) {
   all_the_stats <- all_stats(gs, team=team)
