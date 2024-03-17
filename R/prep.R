@@ -22,17 +22,7 @@ prepDataList <- function(x, format=fmt) {
     ## remove Outs from output now that have IP
     xi$Outs <- NULL
     ## add scorecard links as hyperlinks to "when" column
-    #link <- NULL
-    if(!is.null(xi$scorecard_link)) {
-      xi$.hyperlink.when <- xi$scorecard_link
-      #link <- xi$scorecard_link
-      xi$scorecard_link <- NULL
-      # if("when" %in% names(xi)) {
-      #   names(link) <- xi$when
-      #   xi$when <- link
-      #   class(xi$when) <- "hyperlink"
-      # }
-    }
+    xi |> rename(any_of(c(.hyperlink.when="scorecard_link")))
     ## fix any duplicated names
     xi <- as_tibble(xi, .name_repair="unique")
     ## Determine which columns are all missing. Specifically should be these:
