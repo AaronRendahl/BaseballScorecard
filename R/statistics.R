@@ -246,12 +246,12 @@ readrosters <- function(file) {
 
 all_stats <- function(games, team) {
   the_game_stats <- games |> select(stats) |> unnest(stats)
-  b.all <- the_game_stats |> filter(Team=="Roseville") |> select(Batter_Stats) |> unnest(Batter_Stats) |>
+  b.all <- the_game_stats |> filter(Team==team) |> select(Batter_Stats) |> unnest(Batter_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     mutate(Lineup=NA) |>
     calc_stats(batter_calculations, batter_cols_team)
-  p.all <- the_game_stats |> filter(Team=="Roseville") |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
+  p.all <- the_game_stats |> filter(Team==team) |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
     mutate(G=1) |>
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     calc_stats(pitcher_calculations, pitcher_cols_team)
@@ -364,7 +364,7 @@ get_contact_rates <- function(gs, team) {
     g$away$Role <- "away"
     g$home$Role <- "home"
     lsx <- pivot_longer(g$lineup, -Lineup, names_to="Team", values_to="Number")
-    nsx <- rr$Roseville |> select(Number, Name)
+    nsx <- rr[[team]] |> select(Number, Name)
     bind_rows(g$home, g$away) |> left_join(lsx, by=c("Lineup", "Team")) |> left_join(nsx, by="Number") |> mutate(code=g$code)
   }) |> filter(Team==team)
   gg |> count(Name, Contact) |> pivot_wider(names_from=Contact, values_from=n, values_fill = 0) |>
