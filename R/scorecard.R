@@ -532,6 +532,8 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
 
   on.exit(dev.off())
   #message(pages)
+  dir <- dirname(file)
+  if(!dir.exists(dir)) { dir.create(dir) }
   if(pages=="one") {
     pdf(file, width=page.width*2, height=page.height)
     gf <- frameGrob(layout=grid.layout(ncol=2))
