@@ -503,7 +503,6 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
                              heights = c(header.height, main.height, footer.height)))
     main.grid <- placeGrob(main.grid, row=1, col=1, grob=header.grob)
     main.grid <- placeGrob(main.grid, row=2, col=1, grob=main.grob)
-    ## main.grid <- placeGrob(main.grid, row=2, col=1, grob=rectGrob())
     main.grid <- placeGrob(main.grid, row=3, col=1, grob=footer.grob)
     page.grid <- placeGrob(page.grid, row=2, col=2, grob=main.grid)
     page.grid
@@ -511,7 +510,6 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
 
   if(missing(game)) {
     gf1 <- makeside(header="score", team="Roseville", nrow=n_us)
-    ## gf1 <- makeside(header="score", nrow=9) ## team="Roseville", nrow=12) ## for blank/9
     gf2 <- makeside(header="about", nrow=n_them)
   } else {
     tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
