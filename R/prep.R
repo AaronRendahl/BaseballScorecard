@@ -19,12 +19,19 @@ rm(tmp1, tmp2)
 prepDataList <- function(x, format=fmt) {
   fix1 <- function(xi) {
     if(!is.data.frame(xi)) return(xi)
+    ## turn to tibble and fix any duplicated blank names quietly
+    unique_Blank <- function(x) {
+      k <- which(x == "Blank")
+      if(length(k) > 1) {
+        x[k] <- paste0(x[k], "...", k)
+      }
+      x
+    }
+    xi <- as_tibble(xi, .name_repair=unique_Blank)
     ## remove Outs from output now that have IP
     xi$Outs <- NULL
     ## add scorecard links as hyperlinks to "when" column
-    xi |> rename(any_of(c(.hyperlink.when="scorecard_link")))
-    ## fix any duplicated names
-    xi <- as_tibble(xi, .name_repair="unique")
+    xi <- xi |> rename(any_of(c(.hyperlink.when="scorecard_link")))
     ## Determine which columns are all missing. Specifically should be these:
     ## c("Lineup", "Number", "Name", "G", "BA")
     kk <- which(purrr::map_lgl(xi, ~all(is.na(.))))
