@@ -509,12 +509,12 @@ scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
   }
 
   if(missing(game)) {
-    gf1 <- makeside(header="score", team="Roseville", nrow=n_us)
+    gf1 <- makeside(header="score", team=team_name, nrow=n_us)
     gf2 <- makeside(header="about", nrow=n_them)
   } else {
     tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
     nr <- max(c(tmp$Lineup,11))
-    if("Roseville"==names(game$lineup)[3]) {
+    if(team_name==names(game$lineup)[3]) {
       gf1 <- makeside(game, "home", nrow=nr)
       gf2 <- makeside(game, "away", nrow=nr)
     } else {
