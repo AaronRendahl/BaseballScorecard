@@ -73,7 +73,7 @@ makedata <- function(d) {
   ## RunnersOut: how many runners got out during this at bat?
   ## PitchesAtBat: total pitches during at-bat
   d |>
-    mutate(across(c("Balls", "Strikes", "Fouls"), replace_na, 0L)) |>
+    mutate(across(c("Balls", "Strikes", "Fouls"), \(x) replace_na(x, 0L))) |>
     mutate(Outcome=get_Outcome(Play, B1),
            ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
            OutDuring=get_OutDuring(B2, B3, B4),
