@@ -242,7 +242,7 @@ readgame <- function(file, rosters=c(), gamecode) {
     mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
            code = stringr::str_replace(basename(file), gamecode,"\\1"),
            datetime=lubridate::mdy_hm(when))
-  #out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
+  out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
   out
 }
 
