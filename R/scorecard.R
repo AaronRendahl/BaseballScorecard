@@ -17,7 +17,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                       page_size=c(8.5, 11),
                       margins=c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
                       panels=c(1.5, 1, 0.65), # bottom, left, top
-                      n_players=12, n_innings=c(7, 2)) {
+                      n_players = 12, n_innings = c(7, 2), n_pitchers = 6) {
   blank <- missing(game)
   pages <- match.arg(pages)
 
@@ -46,6 +46,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   pitchsize       <- if(missing(game)) 0.12 else 0.10
   pitchboxcolor   <- "gray30"
   pitchslashcolor <- "gray30"
+
 
   teamnamesize   <- 14
   footertextsize <-  8; footertextcolor <- "gray20"
@@ -255,8 +256,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                       row=1, col=1)
       return(gf)
     } else {
-      npitchers <- 6
-      heights2 <- c(0.2,rep(1/npitchers, npitchers),0.2)
+      heights2 <- c(0.2,rep(1/n_pitchers, n_pitchers),0.2)
       leftcols <- panel.left * c(.5, .4, .1)
       nleftcols <- length(leftcols)
       npinnings <- ninnings
@@ -275,7 +275,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                        textGrob("Total", x=0.5, y=unit(3, "pt"), just="bottom",
                                 gp=gpar(fontsize=inningtextsize)),
                        row=1, col=2)
-      for(i in 1:npitchers) {
+      for(i in 1:n_pitchers) {
         gf2 <- placeGrob(gf2,
                          textGrob("#", x=0.05, just="left", gp=gpar(fontsize=leftlabelsize, col=leftlabelcolor)),
                          row=i+1, col=1)
@@ -283,7 +283,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
         gf2 <- placeGrob(gf2, box, row=i+1, col=1)
         gf2 <- placeGrob(gf2, box, row=i+1, col=2)
       }
-      for(i in 1:npinnings) for(j in 1:npitchers) {
+      for(i in 1:npinnings) for(j in 1:n_pitchers) {
         box <- rectGrob(gp=gpar(lwd=0.25))
         gf2 <- placeGrob(gf2, box, row=j+1, col=nleftcols+i)
       }
