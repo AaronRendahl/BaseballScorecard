@@ -54,11 +54,8 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
 
   basedotcolor <- "gray50"
   numbercolor <- "gray50"
-
   pitchboxcolor <- "gray30"
   pitchslashcolor <- "gray30"
-
-  runslashcolor <- "black"
   pitchtextcolor <- "gray20"
 
   makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
