@@ -249,14 +249,13 @@ readgames <- function(files, rosters, team=c(), bydate=c(), gamecode="^Game_([0-
   }
   gs <- tibble(datafile=files) |>
     mutate(map_dfr(datafile, readgame, rosters=rosters, gamecode=gamecode)) |>
+    mutate(mtime=file.mtime(datafile)) |>
     arrange(code) |>
     mutate(group=paste0(about, tog(1:n(), maxg)), .by=about) |>
-    mutate(order=1:n(), .by=about) |>
-    mutate(who = map_chr(lineup, ~setdiff(names(.)[2:3], team))) |>
     mutate(name=sprintf("%s %s", if_else(about %in% bydate,
                                          format(datetime, "%m-%e") |> str_remove("^0") |> str_remove_all(" "),
-                                         paste("Game", order)), who)) |>
-    select(-datafile, -order, -who)
+                                         paste("Game", 1:n())),
+                        map_chr(lineup, ~setdiff(names(.)[2:3], team))), .by=about)
   ## allow for numbers to be characters
   if(allowchar) {
     for(i in 1:nrow(gs)) {
