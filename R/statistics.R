@@ -239,17 +239,33 @@ readgame <- function(file, rosters, gamecode) {
   out
 }
 
-readgames <- function(files, rosters, team=c(), bydate=c(), gamecode="^Game_([0-9a-z]+)\\..*", maxg=8,
-                      allowchar=FALSE) {
+readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
+                      files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
+                      rosters,
+                      team=c(), bydate=c(), maxg=8, allowchar=FALSE,
+                      save.file, resave=!missing(save.file)) {
   # a little function to separate the GSBL games into 1-8 and 9-16
   tog <- function(x, n) {
     if(max(x) <=n) return("")
     k <- ((x-1) %/% n)*n
     sprintf(" %d-%d", k+1, k+n)
   }
-  gs <- tibble(datafile=files) |>
-    mutate(map_dfr(datafile, readgame, rosters=rosters, gamecode=gamecode)) |>
+  gs <- tibble(datafile=files) |> mutate(mtime.now=file.mtime(datafile))
+  if(!missing(save.file) && file.exists(save.file)) {
+    gs <- full_join(gs, read_rds(save.file), by="datafile")
+  }
+  gs <- gs |> bind_rows(tibble(mtime=as.POSIXct(c()))) |>
+    mutate(status=case_when(is.na(mtime.now) ~ "remove",
+                            is.na(mtime) ~ "new",
+                            mtime.now > mtime ~ "update",
+                            TRUE ~ "ok"
+    ))
+  print(split(gs$datafile, gs$status))
+  gs <- gs |> filter(status %in% c("new", "update")) |> select(datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
+    mutate(map_dfr(datafile, readgame, rosters=rosters, gamecode=gamecode)) |>
+    bind_rows(filter(gs, status=="ok")) |>
+    select(-mtime.now) |>
     arrange(code) |>
     mutate(group=paste0(about, tog(1:n(), maxg)), .by=about) |>
     mutate(name=sprintf("%s %s", if_else(about %in% bydate,
@@ -264,6 +280,9 @@ readgames <- function(files, rosters, team=c(), bydate=c(), gamecode="^Game_([0-
       gs$home[[i]]$Pitcher <- as.character(gs$home[[i]]$Pitcher)
       gs$away[[i]]$Pitcher <- as.character(gs$away[[i]]$Pitcher)
     }
+  }
+  if(resave) {
+    saveRDS(gs, save.file)
   }
   gs
 }
