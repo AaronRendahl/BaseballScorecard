@@ -11,9 +11,10 @@
 
 
 scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
-                      pages=c("one", "two"), n_players=12,
+                      pages=c("one", "two"),
                       team_name="", logos=list(),
-                      pitcher_rest="", n_innings=c(7, 2)) {
+                      pitcher_rest="",
+                      n_players=12, n_innings=c(7, 2)) {
   pages <- match.arg(pages)
 
   if(length(n_players)==1) n_players <- rep(n_players, 2)
