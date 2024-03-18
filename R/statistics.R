@@ -83,7 +83,9 @@ makedata <- function(d) {
       ## .0$ is in case Google to xlsx adds a .0 to numbers
       x |> stringr::str_remove(pattern="^X") |> stringr::str_remove(pattern="\\.0$")
     })) |>
-    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome))
+    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome)) |>
+    mutate(Row = 1:n()) |>
+    select(Inning, Row, Lineup, everything())
 }
 
 ## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
@@ -229,13 +231,14 @@ readgame <- function(file, rosters=c(), gamecode) {
   about <- if(ncol(tmp) > 1) tmp[[2]] else "GSBL"
   g1 <- readxl::read_excel(file, "Lineup", skip=1)
   stopifnot(names(g1)[2:3] %in% ss[2:3])
-  g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata()
-  g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata()
-  out <- tibble(when=when, about=about, lineup=list(g1), away=list(g1_away), home=list(g1_home)) |>
+  g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata() |> mutate(Side = 1, .after = Inning)
+  g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata() |> mutate(Side = 2, .after = Inning)
+  plays <- bind_rows(g1_away, g1_home)
+  out <- tibble(when=when, about=about, lineup=list(g1), plays=list(plays)) |>
     mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
            code = stringr::str_replace(basename(file), gamecode,"\\1"),
            datetime=lubridate::mdy_hm(when))
-  out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
+  #out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
   out
 }
 
