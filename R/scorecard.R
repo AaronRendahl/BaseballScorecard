@@ -34,12 +34,12 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   margin.top    <- margins[3]
   margin.right  <- margins[4]
 
-  footer.height <- panels[1]
-  left.width    <- panels[2]
-  header.height <- panels[3]
+  panel.bottom  <- panels[1]
+  panel.left    <- panels[2]
+  panel.top     <- panels[3]
 
-  main.width  <- page.width  - (margin.left + margin.right + left.width)
-  main.height <- page.height - (margin.top + margin.bottom + header.height + footer.height)
+  main.width  <- page.width  - (margin.left + margin.right + panel.left)
+  main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
   pitchsize <- if(missing(game)) 0.12 else 0.10
   pitchtextsize <- 8
@@ -260,7 +260,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
     } else {
       npitchers <- 6
       heights2 <- c(0.2,rep(1/npitchers, npitchers),0.2)
-      leftcols <- left.width * c(.5, .4, .1)
+      leftcols <- panel.left * c(.5, .4, .1)
       nleftcols <- length(leftcols)
       npinnings <- ninnings
       pwidth <- 1/ncol/2*npinnings
@@ -424,7 +424,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
 
   mainbox <- function(g, lineup, nrow=11) {
     gf <- frameGrob(layout=grid.layout(ncol=2, nrow=1,
-                                        widths=c(left.width, main.width)))
+                                        widths=c(panel.left, main.width)))
     gf <- placeGrob(gf, row=1, col=1, grob=left(lineup, nrow=nrow))
     gf <- placeGrob(gf, row=1, col=2, grob=boxes(g, nrow=nrow))
     gf
@@ -451,12 +451,12 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
 
     ## do final layout
     page.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=3,
-                             widths=c(margin.left, left.width + main.width, margin.right),
+                             widths=c(margin.left, panel.left + main.width, margin.right),
                              heights=c(margin.top,
-                                       header.height + main.height + footer.height,
+                                       panel.top + main.height + panel.bottom,
                                        margin.bottom)))
     main.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=1,
-                             heights = c(header.height, main.height, footer.height)))
+                             heights = c(panel.top, main.height, panel.bottom)))
     main.grid <- placeGrob(main.grid, row=1, col=1, grob=header.grob)
     main.grid <- placeGrob(main.grid, row=2, col=1, grob=main.grob)
     main.grid <- placeGrob(main.grid, row=3, col=1, grob=footer.grob)
