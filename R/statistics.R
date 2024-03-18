@@ -242,7 +242,7 @@ readgame <- function(file, rosters, gamecode) {
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
                       rosters,
-                      team=c(), bydate=c(), maxg=8, allowchar=FALSE,
+                      team="", bydate=c(), maxg=8,
                       save.file, resave=!missing(save.file)) {
   # a little function to separate the GSBL games into 1-8 and 9-16
   tog <- function(x, n) {
@@ -274,7 +274,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                         vs |> str_remove(sprintf("^%s @ ", team)) |>
                           str_remove(sprintf(" @ %s$", team))), .by=about)
   ## allow for numbers to be characters
-  if(allowchar) {
+  if(!all(map_lgl(gs$lineup, \(x) is.numeric(pull(x, "Lineup"))))) {
     for(i in 1:nrow(gs)) {
       gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
       gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
