@@ -12,11 +12,14 @@
 
 scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                       pages=c("one", "two"), n_players=12,
-                      team_name="", pitcher_rest="", ninnings=7, nextra=2,
-                      logos=list()) {
+                      team_name="", logos=list(),
+                      pitcher_rest="", n_innings=c(7, 2)) {
   pages <- match.arg(pages)
 
   if(length(n_players)==1) n_players <- rep(n_players, 2)
+  if(length(n_innings)==1) n_innings <- c(n_innings, 2)
+  ninnings <- n_innings[1]
+  nextra <- n_innings[2]
 
   blank <- missing(game)
   page.width <- 8.5
