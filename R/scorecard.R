@@ -41,12 +41,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   main.width <- page.width - margin.left - margin.right - left.width
   main.height <- page.height - (margin.top + margin.bottom + header.height + footer.height)
 
-  if(blank) {
-    pitchsize <- 0.12
-  } else {
-    pitchsize <- 0.10
-  }
-
+  pitchsize <- if(missing(game)) 0.12 else 0.10
   pitchtextsize <- 8
   headertextsize <- 10
   inningtextsize <- 9
