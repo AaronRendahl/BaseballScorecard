@@ -295,50 +295,54 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
     }
   }
 
-  upper <- function(game, header=c("none", "about", "score"),
-                    team=NA, who=c("home", "away")) {
+  upper <- function(game, header = c("none", "about", "score"),
+                    team = NA, who = c("home", "away")) {
     header <- match.arg(header)
     who <- match.arg(who)
-    vs <- case_when(header=="score" ~ "", who=="home" ~ "@ ", who=="away" ~ "v. ", TRUE ~ "")
-    dt <- if(header=="about") {
+    vs <- case_when(header == "score" ~ "",
+                    who == "home" ~ "@ ",
+                    who == "away" ~ "v. ",
+                    TRUE ~ "")
+    dt <- if(header == "about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
-                 x=0.5,
-                 y=unit(1,"npc")-unit(margin.top,"inches"),
-                 just=c("left", "top"),
-                 gp=gpar(fontsize=headertextsize))
+                 x = 0.5,
+                 y = unit(1, "npc") - unit(margin.top, "inches"),
+                 just = c("left", "top"),
+                 gp = gpar(fontsize = headertextsize))
       } else {
         textGrob(sprintf("%s: %s", game$about, game$when),
-                 x=0.95,
-                 y=0.55,
-                 just=c("right", "center"),
-                 gp=gpar(fontsize=14))
+                 x = 0.95,
+                 y = 0.55,
+                 just = c("right", "center"),
+                 gp = gpar(fontsize=14))
       }
-    } else if(header=="score"){
-      np1 <- ninnings+1
-      xw <- 0.25/7*np1
+    } else if(header == "score"){
+      np1 <- ninnings + 1
+      xw <- 0.25 / 7 * np1
 
-      xx <- (1 - xw) + xw/np1*(1:np1) - xw/(2*np1)
-      yy <- c(.675, .425)
-      a2 <- textGrob(c(1:ninnings,"R"), x = xx, y=0.85, just="bottom",
-                     gp=gpar(fontsize=inningtextsize))
-      xs <- (1 - xw) + xw/np1*(0:np1)
-      a3 <- segmentsGrob(x0=xs, x1=xs, y0=0.3, y1=0.8, gp=gpar(lwd=0.25))
+      xx <- (1 - xw) + xw / np1 * (1:np1) - xw / (2 * np1)
+      yy <- c(0.675, 0.425)
+      a2 <- textGrob(c( 1:ninnings, "R"), x = xx, y = 0.85, just = "bottom",
+                     gp = gpar(fontsize = inningtextsize))
+      xs <- (1 - xw) + xw / np1 * (0:np1)
+      a3 <- segmentsGrob(x0 = xs, x1 = xs, y0 = 0.3, y1 = 0.8, gp = gpar(lwd = 0.25))
       ys <- c(0.3, 0.55, 0.8)
-      a4 <- segmentsGrob(x0=.65, x1=1, y0=ys, y1=ys, gp=gpar(lwd=0.25))
+      a4 <- segmentsGrob(x0 = 0.65, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
         score <- get_score(game) |> as.data.frame() |>
           rownames_to_column("team")
-        names(score)[ncol(score)] <- ninnings+1
+        names(score)[ncol(score)] <- ninnings + 1
         teams <- score$team
         score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
-          mutate(inning=as.integer(inning)) |>
+          mutate(inning = as.integer(inning)) |>
           mutate(xx = xx[inning], yy=yy[team]) |>
-          mutate(value=replace_na(as.character(value), "-"))
-        out2 <- textGrob(score$value, x=xx[score$inning], y=yy[score$team],
-                         gp=gpar(fontsize=inningtextsize))
-        out3 <- textGrob(teams, x=unit(1-xw,"npc")-unit(6,"pt"), y=yy, just="right", gp=gpar(fontsize=inningtextsize))
+          mutate(value = replace_na(as.character(value), "-"))
+        out2 <- textGrob(score$value, x = xx[score$inning], y = yy[score$team],
+                         gp = gpar(fontsize = inningtextsize))
+        out3 <- textGrob(teams, x = unit(1 - xw, "npc") - unit(6, "pt"), y = yy, just="right",
+                         gp = gpar(fontsize = inningtextsize))
         out <- gList(out, out2, out3)
       }
       out
@@ -346,25 +350,25 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
     name <- if(!is.na(team)) {
       haslogo <- team %in% names(logos)
       teamtext <- textGrob(paste0(vs, team),
-                           x=unit(1*haslogo,"snpc"),
-                           y=0.55,
+                           x = unit(1 * haslogo, "snpc"),
+                           y = 0.55,
                            just=c("left", "center"),
-                           gp=gpar(fontsize=teamnamesize))
+                           gp = gpar(fontsize = teamnamesize))
       if(haslogo) {
-        teamlogo <- rasterGrob(logos[[team]], x=0, y=1, height=0.9,
-                               just=c("left", "top"))
-        gTree(children=gList(teamlogo, teamtext))
+        teamlogo <- rasterGrob(logos[[team]], x = 0, y = 1, height = 0.9,
+                               just = c("left", "top"))
+        gTree(children = gList(teamlogo, teamtext))
       } else {
         teamtext
       }
     } else if(is.na(team)) {
       textGrob("@\nvs.",
-                       x=0,
-                       y=unit(1,"npc")-unit(margin.top,"inches"),
-                       just=c("left", "top"),
-                       gp=gpar(fontsize=headertextsize))
+               x = 0,
+               y = unit(1, "npc") - unit(margin.top, "inches"),
+               just = c("left", "top"),
+               gp = gpar(fontsize = headertextsize))
     }
-    gTree(children=gList(dt, name))
+    gTree(children = gList(dt, name))
   }
 
   boxes <- function(d, nrow) {
