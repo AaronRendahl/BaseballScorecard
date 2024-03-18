@@ -66,5 +66,10 @@ prepDataList <- function(x, format=fmt) {
     }
     xi
   }
-  lapply(x, function(y) lapply(y, fix1))
+  lapply(x, function(y) {
+    freeze <- attr(y, "freeze")
+    y2 <- lapply(y, fix1)
+    attr(y2, "freeze") <- freeze
+    y2
+  })
 }

@@ -396,6 +396,9 @@ get_all_stats <- function(gs, team) {
   xAllStats <- c(list(Individual=all_the_stats), xAll)
   names(xAllStats) <- str_remove(names(xAllStats), " NA")
 
+  attr(xAllStats$Team, "freeze") <- 4
+  attr(xAllStats$Individual, "freeze") <- 3
+
   contact <- get_contact_rates(gs, team)
   c(xAllStats[1:2], list('Contact Rate'=list('Contact Rate'=contact)), xAllStats[3:length(xAllStats)])
 }
