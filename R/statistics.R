@@ -271,7 +271,8 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     mutate(name=sprintf("%s %s", if_else(about %in% bydate,
                                          format(datetime, "%m-%e") |> str_remove("^0") |> str_remove_all(" "),
                                          paste("Game", 1:n())),
-                        map_chr(lineup, ~setdiff(names(.)[2:3], team))), .by=about)
+                        vs |> str_remove(sprintf("^%s @ ", team)) |>
+                          str_remove(sprintf(" @ %s$", team))), .by=about)
   ## allow for numbers to be characters
   if(allowchar) {
     for(i in 1:nrow(gs)) {
