@@ -221,7 +221,7 @@ pitcher_stats <- function(game, rosters, who=c("away", "home")) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-readgame <- function(file, rosters, gamecode) {
+readgame <- function(file, rosters=c(), gamecode) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
@@ -241,7 +241,7 @@ readgame <- function(file, rosters, gamecode) {
 
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
-                      rosters,
+                      rosters=c(),
                       team="", bydate=c(), maxg=8,
                       save.file, resave=!missing(save.file)) {
   # a little function to separate the GSBL games into 1-8 and 9-16
