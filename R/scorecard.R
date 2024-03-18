@@ -43,20 +43,19 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  pitchsize <- if(missing(game)) 0.12 else 0.10
-  footertextsize <- 8
+  pitchsize       <- if(missing(game)) 0.12 else 0.10
+  pitchboxcolor   <- "gray30"
+  pitchslashcolor <- "gray30"
+
+  footertextsize  <- 8; footertextcolor <- "gray20"
   headertextsize <- 10
-  inningtextsize <- 9
-  lineupnumsize <- 14
-  numbersize <- 12
-  leftlabelsize <- 9
-  pitchcountsize <- 8
+  inningtextsize <-  9
+  lineupnumsize  <- 14
+  numbersize     <- 12; numbercolor <- "gray50"
+  leftlabelsize  <-  9
+  pitchcountsize <-  8
 
   basedotcolor <- "gray50"
-  numbercolor <- "gray50"
-  pitchboxcolor <- "gray30"
-  pitchslashcolor <- "gray30"
-  footertextcolor <- "gray20"
 
   makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
                       out=NA, bybase, play=NA, basesize=0.13, top=FALSE) {
