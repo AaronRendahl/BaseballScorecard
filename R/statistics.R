@@ -265,7 +265,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     mutate(mtime=file.mtime(datafile)) |>
     mutate(map_dfr(datafile, readgame, rosters=rosters, gamecode=gamecode)) |>
     bind_rows(filter(gs, status=="ok")) |>
-    select(-mtime.now) |>
+    select(-mtime.now, -status) |>
     arrange(code) |>
     mutate(group=paste0(about, tog(1:n(), maxg)), .by=about) |>
     mutate(name=sprintf("%s %s", if_else(about %in% bydate,
