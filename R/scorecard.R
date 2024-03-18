@@ -10,7 +10,7 @@
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
 
 
-scorecard <- function(game, rosters, file="_scorecard_tmp.pdf",
+scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                       pages=c("one", "two"), n_them=12, n_us=12,
                       team_name="", pitcher_rest="", ninnings=7, nextra=2,
                       logos=list()) {
