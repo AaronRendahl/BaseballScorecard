@@ -23,8 +23,9 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
 
   if(length(n_players)==1) n_players <- rep(n_players, 2)
   if(length(n_innings)==1) n_innings <- c(n_innings, 2)
+
   ninnings <- n_innings[1]
-  nextra <- n_innings[2]
+  nextra   <- n_innings[2]
 
   page.width    <- page_size[1]
   page.height   <- page_size[2]
@@ -38,6 +39,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   panel.left    <- panels[2]
   panel.top     <- panels[3]
 
+  ncol <- ninnings + nextra
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
@@ -49,8 +51,6 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   numbersize <- 12
   leftlabelsize <- 9
   pitchcountsize <- 8
-
-  ncol <- ninnings + nextra
 
   basedotcolor <- "gray50"
   numbercolor <- "gray50"
