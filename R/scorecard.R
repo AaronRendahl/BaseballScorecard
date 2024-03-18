@@ -58,7 +58,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   basedotcolor <- "gray50"
 
   makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
-                      out=NA, bybase, play=NA, basesize=0.13, top=FALSE) {
+                      out=NA, bybase, play=NA, basesize, top=FALSE) {
     basesize <- unit(basesize, "inches")
     pitchsize <- unit(pitchsize, "inches")
     basex <- unit(0.55, "npc")
@@ -291,7 +291,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                          grob=textGrob(i, y=unit(3, "pt"), just="bottom",
                                        gp=gpar(fontsize=inningtextsize)))
       }
-      xx1 <- textGrob(footertext,
+      xx1 <- textGrob(footer_text,
                       x=0, y=0.9,  just=c("left","top"),
                       gp=gpar(fontsize=footertextsize, col=footertextcolor))
       gf2 <- placeGrob(gf2, xx1, row=length(heights2), col=1)
