@@ -18,6 +18,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                       margins=c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
                       panels=c(1.5, 1, 0.65), # bottom, left, top
                       n_players=12, n_innings=c(7, 2)) {
+  blank <- missing(game)
   pages <- match.arg(pages)
 
   if(length(n_players)==1) n_players <- rep(n_players, 2)
@@ -25,20 +26,19 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   ninnings <- n_innings[1]
   nextra <- n_innings[2]
 
-  blank <- missing(game)
-  page.width <- page_size[1]
-  page.height <- page_size[2]
+  page.width    <- page_size[1]
+  page.height   <- page_size[2]
 
   margin.bottom <- margins[1]
-  margin.left <- margins[2]
-  margin.top <- margins[3]
-  margin.right <- margins[4]
+  margin.left   <- margins[2]
+  margin.top    <- margins[3]
+  margin.right  <- margins[4]
 
   footer.height <- panels[1]
-  left.width <- panels[2]
+  left.width    <- panels[2]
   header.height <- panels[3]
 
-  main.width <- page.width - margin.left - margin.right - left.width
+  main.width  <- page.width  - (margin.left + margin.right + left.width)
   main.height <- page.height - (margin.top + margin.bottom + header.height + footer.height)
 
   pitchsize <- if(missing(game)) 0.12 else 0.10
