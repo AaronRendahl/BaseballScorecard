@@ -47,12 +47,13 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   pitchboxcolor   <- "gray30"
   pitchslashcolor <- "gray30"
 
-  footertextsize  <- 8; footertextcolor <- "gray20"
+  teamnamesize   <- 14
+  footertextsize <-  8; footertextcolor <- "gray20"
   headertextsize <- 10
   inningtextsize <-  9
   lineupnumsize  <- 14
-  numbersize     <- 12; numbercolor <- "gray50"
-  leftlabelsize  <-  9
+  numbersize     <- 12; numbercolor     <- "gray50"
+  leftlabelsize  <-  9; leftlabelcolor  <- "gray50"
   pitchcountsize <-  8
 
   basedotcolor <- "gray50"
@@ -276,7 +277,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                        row=1, col=2)
       for(i in 1:npitchers) {
         gf2 <- placeGrob(gf2,
-                         textGrob("#", x=0.05, just="left", gp=gpar(fontsize=leftlabelsize, col=numbercolor)),
+                         textGrob("#", x=0.05, just="left", gp=gpar(fontsize=leftlabelsize, col=leftlabelcolor)),
                          row=i+1, col=1)
         box <- rectGrob(gp=gpar(lwd=0.25))
         gf2 <- placeGrob(gf2, box, row=i+1, col=1)
@@ -353,7 +354,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                            x=unit(1*haslogo,"snpc"),
                            y=0.55,
                            just=c("left", "center"),
-                           gp=gpar(fontsize=14))
+                           gp=gpar(fontsize=teamnamesize))
       if(haslogo) {
         teamlogo <- rasterGrob(logos[[team]], x=0, y=1, height=0.9,
                                just=c("left", "top"))
