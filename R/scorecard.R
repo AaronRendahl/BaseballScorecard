@@ -13,7 +13,7 @@
 scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                       pages=c("one", "two"),
                       team_name="", logos=list(),
-                      pitcher_rest="",
+                      footer_text="",
                       page_size=c(8.5, 11),
                       margins=c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
                       panels=c(1.5, 1, 0.65), # bottom, left, top
@@ -44,7 +44,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
   pitchsize <- if(missing(game)) 0.12 else 0.10
-  pitchtextsize <- 8
+  footertextsize <- 8
   headertextsize <- 10
   inningtextsize <- 9
   lineupnumsize <- 14
@@ -56,7 +56,7 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   numbercolor <- "gray50"
   pitchboxcolor <- "gray30"
   pitchslashcolor <- "gray30"
-  pitchtextcolor <- "gray20"
+  footertextcolor <- "gray20"
 
   makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
                       out=NA, bybase, play=NA, basesize=0.13, top=FALSE) {
@@ -292,9 +292,9 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
                          grob=textGrob(i, y=unit(3, "pt"), just="bottom",
                                        gp=gpar(fontsize=inningtextsize)))
       }
-      xx1 <- textGrob(pitcher_rest,
+      xx1 <- textGrob(footertext,
                       x=0, y=0.9,  just=c("left","top"),
-                      gp=gpar(fontsize=pitchtextsize, col=pitchtextcolor))
+                      gp=gpar(fontsize=footertextsize, col=footertextcolor))
       gf2 <- placeGrob(gf2, xx1, row=length(heights2), col=1)
       return(gf2)
     }
