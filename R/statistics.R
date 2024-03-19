@@ -221,7 +221,7 @@ pitcher_stats <- function(game, rosters, forSide) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-readgame <- function(file, rosters=c(), gamecode) {
+readgame <- function(file, rosters=c()) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
@@ -240,7 +240,6 @@ readgame <- function(file, rosters=c(), gamecode) {
     select(Inning, Side, Row, Lineup, Batter, Pitcher, everything())
   out <- tibble(when=when, about=about, lineup=list(g1), plays=list(plays)) |>
     mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
-           code = stringr::str_replace(basename(file), gamecode,"\\1"),
            datetime=lubridate::mdy_hm(when))
   out$stats <- out |> game_stats(rosters=rosters) |> list()
   out
@@ -248,6 +247,7 @@ readgame <- function(file, rosters=c(), gamecode) {
 
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
+                      codes=str_replace(files, gamecode, "\\1"),
                       rosters=c(),
                       team="", bydate=c(), maxg=8,
                       save.file, resave=!missing(save.file)) {
@@ -257,7 +257,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     k <- ((x-1) %/% n)*n
     sprintf(" %d-%d", k+1, k+n)
   }
-  gs <- tibble(datafile=files) |> mutate(mtime.now=file.mtime(datafile))
+  gs <- tibble(code=codes, datafile=files) |> mutate(mtime.now=file.mtime(datafile))
   if(!missing(save.file) && file.exists(save.file)) {
     gs <- full_join(gs, read_rds(save.file), by="datafile")
   }
@@ -268,9 +268,9 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                             TRUE ~ "ok"
     ))
   print(split(gs$datafile, gs$status))
-  gs <- gs |> filter(status %in% c("new", "update")) |> select(datafile) |>
+  gs <- gs |> filter(status %in% c("new", "update")) |> select(code, datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
-    mutate(map_dfr(datafile, readgame, rosters=rosters, gamecode=gamecode)) |>
+    mutate(map_dfr(datafile, readgame, rosters=rosters)) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
     arrange(code) |>
