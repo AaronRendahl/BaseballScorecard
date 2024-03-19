@@ -247,7 +247,7 @@ readgame <- function(file, rosters=c()) {
 
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
-                      codes=str_replace(files, gamecode, "\\1"),
+                      codes=str_replace(basename(files), gamecode, "\\1"),
                       rosters=c(),
                       team="", bydate=c(), maxg=8,
                       save.file, resave=!missing(save.file)) {
@@ -273,13 +273,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     mutate(map_dfr(datafile, readgame, rosters=rosters)) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
-    arrange(code) |>
-    mutate(group=paste0(about, tog(1:n(), maxg)), .by=about) |>
-    mutate(name=sprintf("%s %s", if_else(about %in% bydate,
-                                         format(datetime, "%m-%e") |> str_remove("^0") |> str_remove_all(" "),
-                                         paste("Game", 1:n())),
-                        vs |> str_remove(sprintf("^%s @ ", team)) |>
-                          str_remove(sprintf(" @ %s$", team))), .by=about)
+    arrange(code)
   ## allow for numbers to be characters
   if(!all(map_lgl(gs$lineup, \(x) is.numeric(pull(x, "Lineup"))))) {
     for(i in 1:nrow(gs)) {
