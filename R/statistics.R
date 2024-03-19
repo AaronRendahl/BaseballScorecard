@@ -226,10 +226,10 @@ readgame <- function(file,
                      parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m"))) {
   message(file)
   ss <- readxl::excel_sheets(file)
-  tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
+  tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, col_types="text", .name_repair="minimal")
   when <- parse_time(tmp[[1]])
   about <- if(ncol(tmp) > 1) tmp[[2]] else NA
-  g1 <- readxl::read_excel(file, "Lineup", skip=1)
+  g1 <- readxl::read_excel(file, "Lineup", skip=1, col_types=c("text", "numeric", "numeric"))
   teams <- names(g1)[2:3]
   stopifnot(teams %in% ss[2:3])
   plays <- lapply(teams, \(x) readxl::read_excel(file, sheet = x) |> makedata())
@@ -270,14 +270,6 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     arrange(code)
   # out$stats <- out |> game_stats(rosters=rosters) |> list()
 
-  ## allow for numbers to be characters
-  # if(!all(map_lgl(gs$lineup, \(x) is.numeric(pull(x, "Lineup"))))) {
-  #   for(i in 1:nrow(gs)) {
-  #     gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
-  #     gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
-  #     gs$plays[[i]]$Pitcher <- as.character(gs$plays[[i]]$Pitcher)
-  #   }
-  # }
   if(resave) {
     saveRDS(gs, save.file)
   }
