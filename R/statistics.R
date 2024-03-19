@@ -242,7 +242,7 @@ readgame <- function(file, rosters=c(), gamecode) {
     mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
            code = stringr::str_replace(basename(file), gamecode,"\\1"),
            datetime=lubridate::mdy_hm(when))
-  out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
+  out$stats <- out |> game_stats(rosters=rosters) |> list()
   out
 }
 
@@ -326,6 +326,7 @@ get_score <- function(game) {
 }
 
 game_stats <- function(game, rosters) {
+  game <- flatten(game)
   tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"), Side=1:2,
          vs=names(game$lineup)[3:2],
          #Data=list(game$away, game$home),
@@ -335,7 +336,6 @@ game_stats <- function(game, rosters) {
                            batter_stats(game, rosters, forSide=1)))
 }
 
-## calls game_stats
 makestatsfile <- function(game, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
