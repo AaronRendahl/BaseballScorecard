@@ -228,7 +228,7 @@ readgame <- function(file,
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, col_types="text", .name_repair="minimal")
   when <- parse_time(tmp[[1]])
-  about <- if(ncol(tmp) > 1) tmp[[2]] else NA
+  about <- if(ncol(tmp) > 1) tmp[[2]] else as.character(NA)
   g1 <- readxl::read_excel(file, "Lineup", skip=1, col_types=c("text", "numeric", "numeric"))
   teams <- names(g1)[2:3]
   stopifnot(teams %in% ss[2:3])
