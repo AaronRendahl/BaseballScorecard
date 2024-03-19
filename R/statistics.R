@@ -270,7 +270,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     arrange(code)
   # out$stats <- out |> game_stats(rosters=rosters) |> list()
 
-  if(resave) {
+  if(resave && !missing(save.file)) {
     saveRDS(gs, save.file)
   }
   gs
