@@ -249,14 +249,8 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
                       codes=str_replace(basename(files), gamecode, "\\1"),
                       rosters=c(),
-                      team="", bydate=c(), maxg=8,
                       save.file, resave=!missing(save.file)) {
-  # a little function to separate the GSBL games into 1-8 and 9-16
-  tog <- function(x, n) {
-    if(max(x) <=n) return("")
-    k <- ((x-1) %/% n)*n
-    sprintf(" %d-%d", k+1, k+n)
-  }
+
   gs <- tibble(code=codes, datafile=files) |> mutate(mtime.now=file.mtime(datafile))
   if(!missing(save.file) && file.exists(save.file)) {
     gs <- full_join(gs, read_rds(save.file), by="datafile")
@@ -372,7 +366,7 @@ makeallstatsfiles <- function(gs, team) {
         class(link) <- "hyperlink"
       }
       list(header=list(sprintf("%s, %s", g$vs, g$when), link)) |> c(tmp)
-    }))
+    }) |> setNames(code))
 }
 
 get_all_stats <- function(gs, team) {
