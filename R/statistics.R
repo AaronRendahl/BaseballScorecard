@@ -221,29 +221,27 @@ pitcher_stats <- function(game, rosters, forSide) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-readgame <- function(file) {
+
+readgame <- function(file,
+                     parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m"))) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
-  when <- tmp[[1]] |> stringr::str_replace("([ap])$", "\\1m")
-  about <- if(ncol(tmp) > 1) tmp[[2]] else "GSBL"
+  when <- parse_time(tmp[[1]])
+  about <- if(ncol(tmp) > 1) tmp[[2]] else NA
   g1 <- readxl::read_excel(file, "Lineup", skip=1)
-  teams <- tibble(Side=1:2, Team=names(g1)[2:3]) # away, home
-  stopifnot(teams$Team %in% ss[2:3])
-  lineup <- g1 |> setNames(c("Lineup", "1", "2")) |>
+  teams <- names(g1)[2:3]
+  stopifnot(teams %in% ss[2:3])
+  plays <- lapply(teams, \(x) readxl::read_excel(file, sheet = x) |> makedata())
+  lineup <- g1 |> setNames(c("Lineup", "1", "2")) |> # 1=away, 2=home
     pivot_longer(-Lineup,
                  names_to="Side", names_transform=as.numeric,
                  values_to="Number", values_drop_na=TRUE) |>
-    arrange(Side, Lineup) |> select(Side, Lineup, Number)
-
-  lineup.out <- full_join(teams, lineup, by="Side") |> nest(.by=c(Side, Team), .key="Lineup")
-
-  g1_away <- readxl::read_excel(file, teams$Team[1]) |> makedata() |> mutate(Side = teams$Side[1], .after = Inning)
-  g1_home <- readxl::read_excel(file, teams$Team[2]) |> makedata() |> mutate(Side = teams$Side[2], .after = Inning)
-  plays <- bind_rows(g1_away, g1_home) |>
-    left_join(lineup, by=c("Side", "Lineup")) |>
-    select(Inning, Side, Row, Lineup, Batter=Number, Pitcher, everything())
-  out <- tibble(when=when, about=about, lineup=list(lineup.out), plays=list(plays))
+    nest(.by=Side, .key="Lineup")
+  game <- tibble(Side=1:2, Team=teams, Plays=plays) |>
+    full_join(lineup, by="Side") |>
+    arrange(Side) |> select(Side, Team, Lineup, Plays)
+  out <- tibble(when=when, about=about, game=list(game))
   out
 }
 
@@ -266,7 +264,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
   print(split(gs$datafile, gs$status))
   gs <- gs |> filter(status %in% c("new", "update")) |> select(code, datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
-    mutate(map_dfr(datafile, readgame, rosters=rosters)) |>
+    mutate(map_dfr(datafile, readgame)) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
     arrange(code)# |>
