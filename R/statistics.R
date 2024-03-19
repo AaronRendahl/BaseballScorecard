@@ -228,20 +228,22 @@ readgame <- function(file, rosters=c()) {
   when <- tmp[[1]] |> stringr::str_replace("([ap])$", "\\1m")
   about <- if(ncol(tmp) > 1) tmp[[2]] else "GSBL"
   g1 <- readxl::read_excel(file, "Lineup", skip=1)
-  lineup.long <- g1 |> setNames(c("Lineup", "1", "2")) |>
+  teams <- tibble(Side=1:2, Team=names(g1)[2:3]) # away, home
+  stopifnot(teams$Team %in% ss[2:3])
+  lineup <- g1 |> setNames(c("Lineup", "1", "2")) |>
     pivot_longer(-Lineup,
                  names_to="Side", names_transform=as.numeric,
-                 values_to="Batter", values_drop_na=TRUE)
-  stopifnot(names(g1)[2:3] %in% ss[2:3])
-  g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata() |> mutate(Side = 1, .after = Inning)
-  g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata() |> mutate(Side = 2, .after = Inning)
+                 values_to="Number", values_drop_na=TRUE) |>
+    arrange(Side, Lineup) |> select(Side, Lineup, Number)
+
+  lineup.out <- full_join(teams, lineup, by="Side") |> nest(.by=c(Side, Team), .key="Lineup")
+
+  g1_away <- readxl::read_excel(file, teams$Team[1]) |> makedata() |> mutate(Side = teams$Side[1], .after = Inning)
+  g1_home <- readxl::read_excel(file, teams$Team[2]) |> makedata() |> mutate(Side = teams$Side[2], .after = Inning)
   plays <- bind_rows(g1_away, g1_home) |>
-    left_join(lineup.long, by=c("Side", "Lineup")) |>
-    select(Inning, Side, Row, Lineup, Batter, Pitcher, everything())
-  out <- tibble(when=when, about=about, lineup=list(g1), plays=list(plays)) |>
-    mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
-           datetime=lubridate::mdy_hm(when))
-  out$stats <- out |> game_stats(rosters=rosters) |> list()
+    left_join(lineup, by=c("Side", "Lineup")) |>
+    select(Inning, Side, Row, Lineup, Batter=Number, Pitcher, everything())
+  out <- tibble(when=when, about=about, lineup=list(lineup.out), plays=list(plays))
   out
 }
 
@@ -267,15 +269,19 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     mutate(map_dfr(datafile, readgame, rosters=rosters)) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
-    arrange(code)
+    arrange(code)# |>
+  #   mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
+  #          datetime=lubridate::mdy_hm(when))
+  # out$stats <- out |> game_stats(rosters=rosters) |> list()
+
   ## allow for numbers to be characters
-  if(!all(map_lgl(gs$lineup, \(x) is.numeric(pull(x, "Lineup"))))) {
-    for(i in 1:nrow(gs)) {
-      gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
-      gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
-      gs$plays[[i]]$Pitcher <- as.character(gs$plays[[i]]$Pitcher)
-    }
-  }
+  # if(!all(map_lgl(gs$lineup, \(x) is.numeric(pull(x, "Lineup"))))) {
+  #   for(i in 1:nrow(gs)) {
+  #     gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
+  #     gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
+  #     gs$plays[[i]]$Pitcher <- as.character(gs$plays[[i]]$Pitcher)
+  #   }
+  # }
   if(resave) {
     saveRDS(gs, save.file)
   }
