@@ -428,8 +428,8 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
 
   makeside <- function(game, who, team=NA, header, nrow) {
     if(!missing(game)) {
-      g <- game[[who]]
       k <- match(who, c("away", "home"))
+      g <- game$plays |> filter(Side==k)
       lineup <- game$lineup[,c(1,k+1)]
       team <- colnames(game$lineup)[k+1]
       names(lineup)[2] <- "Number"

@@ -315,14 +315,10 @@ all_stats <- function(games, team) {
 }
 
 get_score <- function(game) {
-  a1 <- game$away |> group_by(Inning) |> summarize(R=sum(ToBase==4), .groups="drop") |> rename(away="R")
-  a2 <- game$home |> group_by(Inning) |> summarize(R=sum(ToBase==4), .groups="drop") |> rename(home="R")
-  Final <- c(sum(a1$away), sum(a2$home))
-  out <- full_join(a1, a2, by="Inning") |> as.data.frame()
-  rownames(out) <- out$Inning
-  out$Inning <- NULL
-  colnames(out) <- names(game$lineup[2:3])
-  out |> as.matrix() |> t() |> cbind(R=Final)
+  a1 <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
+    pivot_wider(names_from=Inning, values_from=R) |> as.data.frame() |>
+    select(-Side) |> as.matrix()
+  cbind(a1, R=rowSums(a1))
 }
 
 game_stats <- function(game, rosters) {
