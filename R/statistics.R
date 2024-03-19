@@ -253,7 +253,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
 
   gs <- tibble(code=codes, datafile=files) |> mutate(mtime.now=file.mtime(datafile))
   if(!missing(save.file) && file.exists(save.file)) {
-    gs <- full_join(gs, read_rds(save.file), by="datafile")
+    gs <- full_join(gs, read_rds(save.file), by=c("code", "datafile"))
   }
   gs <- gs |> bind_rows(tibble(mtime=as.POSIXct(c()))) |>
     mutate(status=case_when(is.na(mtime.now) ~ "remove",
@@ -273,7 +273,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
   if(resave && !missing(save.file)) {
     saveRDS(gs, save.file)
   }
-  gs
+  gs |> select(-datafile, -mtime)
 }
 
 readrosters <- function(file) {
