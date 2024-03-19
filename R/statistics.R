@@ -427,15 +427,12 @@ get_all_stats <- function(gs, team) {
 
 get_contact_rates <- function(gs, team) {
   gg <- map_dfr(seq_len(nrow(gs)), function(idx) {
-    g <- gs[idx,] |> select(code, lineup, away, home) |> flatten()
-    g$away$Team <- names(g$lineup)[2]
-    g$home$Team <- names(g$lineup)[3]
-    g$away$Role <- "away"
-    g$home$Role <- "home"
-    lsx <- pivot_longer(g$lineup, -Lineup, names_to="Team", values_to="Number")
+    g <- gs[idx,] |> select(code, lineup, plays) |> flatten()
+    out <- g$plays |> mutate(Team=names(g$lineup)[Side+1]) |> filter(Team==team) |>
+      rename(Number=Batter)
     nsx <- rr[[team]] |> select(Number, Name)
-    bind_rows(g$home, g$away) |> left_join(lsx, by=c("Lineup", "Team")) |> left_join(nsx, by="Number") |> mutate(code=g$code)
-  }) |> filter(Team==team)
+    out <- out |>  left_join(nsx, by="Number") |> mutate(code=g$code)
+  })
   gg |> count(Name, Contact) |> pivot_wider(names_from=Contact, values_from=n, values_fill = 0) |>
     select(Name, BBHB, K, Soft, Hard) |>
     mutate(Contact=Soft+Hard, AB=Soft+Hard+K, 'Contact/AB'=(Hard+Soft)/AB, 'Hard/AB'=Hard/AB, 'Hard/Contact'=Hard/(Soft+Hard)) |>
