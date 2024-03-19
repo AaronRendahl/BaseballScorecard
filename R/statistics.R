@@ -324,7 +324,6 @@ game_stats <- function(game, rosters) {
   game <- flatten(game)
   tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"), Side=1:2,
          vs=names(game$lineup)[3:2],
-         #Data=list(game$away, game$home),
          Pitcher_Stats=list(pitcher_stats(game, rosters, forSide=1),
                             pitcher_stats(game, rosters, forSide=2)),
          Batter_Stats=list(batter_stats(game, rosters, forSide=1),
