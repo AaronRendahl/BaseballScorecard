@@ -392,10 +392,8 @@ get_all_stats <- function(gs, team) {
   all_the_stats$Batting <- all_the_stats$Batting %>%
     mutate(Name=if_else(Name==team, "Team", Name)) |>
     calc_stats(batter_calculations, batter_cols_total)
-  #all_the_stats$Batting <- all_the_stats$Batting[c("Number", "Name", "G", "Lineup", batter_cols_total)]
   all_the_stats$Pitching <- all_the_stats$Pitching %>%
     calc_stats(pitcher_calculations, pitcher_cols_total)
-  #all_the_stats$Pitching <- all_the_stats$Pitching[c("Number", "Name", "G", pitcher_cols_total)]
 
   x$data <- setNames(x$data, x$type)
   xAll <- split(x, x$X) %>% map(pull, "data")
