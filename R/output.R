@@ -93,7 +93,6 @@ statsToExcel <- function(out, filename) {
     addWorksheet(wb, n)
     addDataList(wb, n, out[[n]])
     freeze <- attr(out[[n]], "freeze")
-    message(n, freeze)
     if(!is.null(freeze)) freezePane(wb, n, firstActiveCol=freeze)
   }
   saveWorkbook(wb, filename, overwrite = TRUE)

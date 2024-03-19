@@ -83,7 +83,9 @@ makedata <- function(d) {
       ## .0$ is in case Google to xlsx adds a .0 to numbers
       x |> stringr::str_remove(pattern="^X") |> stringr::str_remove(pattern="\\.0$")
     })) |>
-    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome))
+    mutate(PitchesAtBat=get_PitchesAtBat(Balls + Strikes + Fouls, Outcome)) |>
+    mutate(Row = 1:n()) |>
+    select(Inning, Row, Lineup, everything())
 }
 
 ## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
@@ -161,11 +163,10 @@ batter_counting_stats <- function(d) {
       .groups="drop")
 }
 
-batter_stats <- function(game, rosters, who=c("away", "home"), teamname=TRUE) {
-  who <- match.arg(who)
-  i <- match(who, c("away", "home"))
-  x <- game$lineup[c(1,i+1)]
-  d <- game[[who]]
+batter_stats <- function(game, rosters, forSide, teamname=TRUE) {
+  stopifnot(forSide %in% 1:2)
+  x <- game$lineup[c(1, forSide+1)]
+  d <- game$plays |> filter(Side==forSide)
   team <- colnames(x)[2]
   teamname <- if(teamname) team else "Team"
   names(x)[2] <- "Number"
@@ -199,11 +200,10 @@ pitcher_counting_stats <- function(d) {
       .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
 }
 
-pitcher_stats <- function(game, rosters, who=c("away", "home")) {
-  who <- match.arg(who)
-  i <- match(who, c("away", "home"))
-  x <- game$lineup[c(1,i+1)]
-  d <- game[[setdiff(c("home", "away"), who)]]
+pitcher_stats <- function(game, rosters, forSide) {
+  stopifnot(forSide %in% 1:2)
+  x <- game$lineup[c(1, forSide + 1)]
+  d <- game$plays |> filter(Side == 3 - forSide)   ## need to use opposite side!
   team <- colnames(x)[2]
   ## x has Lineup, <Team Name>; rosters has Number, Name
   ## <Team Name> to Number, then join by Number
@@ -228,14 +228,21 @@ readgame <- function(file, rosters=c(), gamecode) {
   when <- tmp[[1]] |> stringr::str_replace("([ap])$", "\\1m")
   about <- if(ncol(tmp) > 1) tmp[[2]] else "GSBL"
   g1 <- readxl::read_excel(file, "Lineup", skip=1)
+  lineup.long <- g1 |> setNames(c("Lineup", "1", "2")) |>
+    pivot_longer(-Lineup,
+                 names_to="Side", names_transform=as.numeric,
+                 values_to="Batter", values_drop_na=TRUE)
   stopifnot(names(g1)[2:3] %in% ss[2:3])
-  g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata()
-  g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata()
-  out <- tibble(when=when, about=about, lineup=list(g1), away=list(g1_away), home=list(g1_home)) |>
+  g1_away <- readxl::read_excel(file, names(g1)[2]) |> makedata() |> mutate(Side = 1, .after = Inning)
+  g1_home <- readxl::read_excel(file, names(g1)[3]) |> makedata() |> mutate(Side = 2, .after = Inning)
+  plays <- bind_rows(g1_away, g1_home) |>
+    left_join(lineup.long, by=c("Side", "Lineup")) |>
+    select(Inning, Side, Row, Lineup, Batter, Pitcher, everything())
+  out <- tibble(when=when, about=about, lineup=list(g1), plays=list(plays)) |>
     mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
            code = stringr::str_replace(basename(file), gamecode,"\\1"),
            datetime=lubridate::mdy_hm(when))
-  out$stats <- out |> flatten() |> game_stats(rosters=rosters) |> list()
+  out$stats <- out |> game_stats(rosters=rosters) |> list()
   out
 }
 
@@ -278,8 +285,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     for(i in 1:nrow(gs)) {
       gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
       gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
-      gs$home[[i]]$Pitcher <- as.character(gs$home[[i]]$Pitcher)
-      gs$away[[i]]$Pitcher <- as.character(gs$away[[i]]$Pitcher)
+      gs$plays[[i]]$Pitcher <- as.character(gs$plays[[i]]$Pitcher)
     }
   }
   if(resave) {
@@ -308,27 +314,22 @@ all_stats <- function(games, team) {
 }
 
 get_score <- function(game) {
-  a1 <- game$away |> group_by(Inning) |> summarize(R=sum(ToBase==4), .groups="drop") |> rename(away="R")
-  a2 <- game$home |> group_by(Inning) |> summarize(R=sum(ToBase==4), .groups="drop") |> rename(home="R")
-  Final <- c(sum(a1$away), sum(a2$home))
-  out <- full_join(a1, a2, by="Inning") |> as.data.frame()
-  rownames(out) <- out$Inning
-  out$Inning <- NULL
-  colnames(out) <- names(game$lineup[2:3])
-  out |> as.matrix() |> t() |> cbind(R=Final)
+  a1 <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
+    pivot_wider(names_from=Inning, values_from=R) |> as.data.frame() |>
+    select(-Side) |> as.matrix()
+  cbind(a1, R=rowSums(a1))
 }
 
 game_stats <- function(game, rosters) {
-  tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"),
+  game <- flatten(game)
+  tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"), Side=1:2,
          vs=names(game$lineup)[3:2],
-         Data=list(game$away, game$home),
-         Pitcher_Stats=list(pitcher_stats(game, rosters, "away"),
-                            pitcher_stats(game, rosters, "home")),
-         Batter_Stats=list(batter_stats(game, rosters, "away"),
-                           batter_stats(game, rosters, "home")))
+         Pitcher_Stats=list(pitcher_stats(game, rosters, forSide=1),
+                            pitcher_stats(game, rosters, forSide=2)),
+         Batter_Stats=list(batter_stats(game, rosters, forSide=1),
+                           batter_stats(game, rosters, forSide=2)))
 }
 
-## calls game_stats
 makestatsfile <- function(game, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
@@ -424,15 +425,12 @@ get_all_stats <- function(gs, team) {
 
 get_contact_rates <- function(gs, team) {
   gg <- map_dfr(seq_len(nrow(gs)), function(idx) {
-    g <- gs[idx,] |> select(code, lineup, away, home) |> flatten()
-    g$away$Team <- names(g$lineup)[2]
-    g$home$Team <- names(g$lineup)[3]
-    g$away$Role <- "away"
-    g$home$Role <- "home"
-    lsx <- pivot_longer(g$lineup, -Lineup, names_to="Team", values_to="Number")
+    g <- gs[idx,] |> select(code, lineup, plays) |> flatten()
+    out <- g$plays |> mutate(Team=names(g$lineup)[Side+1]) |> filter(Team==team) |>
+      rename(Number=Batter)
     nsx <- rr[[team]] |> select(Number, Name)
-    bind_rows(g$home, g$away) |> left_join(lsx, by=c("Lineup", "Team")) |> left_join(nsx, by="Number") |> mutate(code=g$code)
-  }) |> filter(Team==team)
+    out <- out |>  left_join(nsx, by="Number") |> mutate(code=g$code)
+  })
   gg |> count(Name, Contact) |> pivot_wider(names_from=Contact, values_from=n, values_fill = 0) |>
     select(Name, BBHB, K, Soft, Hard) |>
     mutate(Contact=Soft+Hard, AB=Soft+Hard+K, 'Contact/AB'=(Hard+Soft)/AB, 'Hard/AB'=Hard/AB, 'Hard/Contact'=Hard/(Soft+Hard)) |>

@@ -428,8 +428,8 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
 
   makeside <- function(game, who, team=NA, header, nrow) {
     if(!missing(game)) {
-      g <- game[[who]]
       k <- match(who, c("away", "home"))
+      g <- game$plays |> filter(Side==k)
       lineup <- game$lineup[,c(1,k+1)]
       team <- colnames(game$lineup)[k+1]
       names(lineup)[2] <- "Number"
@@ -465,14 +465,11 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
     gf2 <- makeside(header="about", nrow=n_players[2])
   } else {
     tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
-    nr <- max(c(tmp$Lineup,11))
-    if(team_name==names(game$lineup)[3]) {
-      gf1 <- makeside(game, "home", nrow=nr, header="score")
-      gf2 <- makeside(game, "away", nrow=nr, header="about")
-    } else {
-      gf1 <- makeside(game, "away", nrow=nr, header="score")
-      gf2 <- makeside(game, "home", nrow=nr, header="about")
-    }
+    nr <- max(c(tmp$Lineup, 11))
+    sides <- c("away", "home")
+    if(team_name==names(game$lineup)[3]) sides <- rev(sides)
+    gf1 <- makeside(game, sides[1], nrow=nr, header="score")
+    gf2 <- makeside(game, sides[2], nrow=nr, header="about")
   }
 
   on.exit(dev.off())
