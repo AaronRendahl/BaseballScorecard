@@ -261,15 +261,13 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                             mtime.now > mtime ~ "update",
                             TRUE ~ "ok"
     ))
-  print(split(gs$datafile, gs$status))
+  # print(split(gs$datafile, gs$status))
   gs <- gs |> filter(status %in% c("new", "update")) |> select(code, datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
     mutate(map_dfr(datafile, readgame)) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
-    arrange(code)# |>
-  #   mutate(vs = map_chr(lineup, ~sprintf("%s @ %s", names(.)[2], names(.)[3])),
-  #          datetime=lubridate::mdy_hm(when))
+    arrange(code)
   # out$stats <- out |> game_stats(rosters=rosters) |> list()
 
   ## allow for numbers to be characters
