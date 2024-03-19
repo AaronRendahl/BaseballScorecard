@@ -328,8 +328,8 @@ game_stats <- function(game, rosters) {
          #Data=list(game$away, game$home),
          Pitcher_Stats=list(pitcher_stats(game, rosters, forSide=1),
                             pitcher_stats(game, rosters, forSide=2)),
-         Batter_Stats=list(batter_stats(game, rosters, forSide=2),
-                           batter_stats(game, rosters, forSide=1)))
+         Batter_Stats=list(batter_stats(game, rosters, forSide=1),
+                           batter_stats(game, rosters, forSide=2)))
 }
 
 makestatsfile <- function(game, team, filename) {
