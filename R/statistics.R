@@ -221,7 +221,7 @@ pitcher_stats <- function(game, rosters, forSide) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-readgame <- function(file, rosters=c()) {
+readgame <- function(file) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, .name_repair="minimal")
