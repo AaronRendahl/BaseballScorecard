@@ -285,8 +285,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     for(i in 1:nrow(gs)) {
       gs$lineup[[i]][[2]] <- as.character(gs$lineup[[i]][[2]])
       gs$lineup[[i]][[3]] <- as.character(gs$lineup[[i]][[3]])
-      gs$home[[i]]$Pitcher <- as.character(gs$home[[i]]$Pitcher)
-      gs$away[[i]]$Pitcher <- as.character(gs$away[[i]]$Pitcher)
+      gs$plays[[i]]$Pitcher <- as.character(gs$plays[[i]]$Pitcher)
     }
   }
   if(resave) {
