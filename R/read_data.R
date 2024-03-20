@@ -15,7 +15,7 @@ readgame <- function(file,
                  values_to="Number", values_drop_na=TRUE) |>
     nest(.by=Side, .key="Lineup") |>
     left_join(tibble(Side=1:2, Team=teams), by="Side")
-  game <- lineups |> mutate(Plays=map2(Team, Lineup, \(team, lineup) {
+  game <- lineups |> mutate(Plays = map2(Team, Lineup, \(team, lineup) {
     readxl::read_excel(file, sheet = team) |> makedata() |> left_join(lineup, by="Lineup") |>
       select(Row, Inning, Lineup, Batter=Number, Pitcher, everything())
   }))
