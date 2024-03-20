@@ -73,22 +73,6 @@ batter_counting_stats <- function(d) {
       .groups="drop")
 }
 
-batter_stats <- function(game, forSide, teamname=TRUE) {
-  stopifnot(forSide %in% 1:2)
-  x <- game$lineup |> filter(Side==forSide) |> select(-Side)
-  d <- game$plays  |> filter(Side==forSide) |> select(-Side)
-  teamname <- if(teamname) game$teams[forSide] else "Team"
-
-  stats <- batter_counting_stats(d)
-  ind_stats <- stats |> left_join(x, by="Lineup") |>
-    calc_stats(batter_calculations, batter_cols_ind)
-  team_stats <- stats |> summarize(across(-c(Lineup), sum)) |>
-    mutate(Lineup=NA, Number=NA, Name=teamname) |>
-    calc_stats(batter_calculations, batter_cols_team)
-  out <- bind_rows(ind_stats, team_stats) |> mutate(G=NA)
-  out[c("Number", "Name", "G", "Lineup", batter_cols_team)]
-}
-
 ## PITCHER STATS
 ## returns data set with Number, Order, and then all the counting stats
 pitcher_counting_stats <- function(d) {
@@ -106,6 +90,22 @@ pitcher_counting_stats <- function(d) {
       .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
 }
 
+batter_stats <- function(game, forSide, teamname=TRUE) {
+  stopifnot(forSide %in% 1:2)
+  x <- game$lineup |> filter(Side==forSide) |> select(-Side)
+  d <- game$plays  |> filter(Side==forSide) |> select(-Side)
+  teamname <- if(teamname) game$teams[forSide] else "Team"
+
+  stats <- batter_counting_stats(d)
+  ind_stats <- stats |> left_join(x, by="Lineup") |>
+    calc_stats(batter_calculations, batter_cols_ind)
+  team_stats <- stats |> summarize(across(-c(Lineup), sum)) |>
+    mutate(Lineup=NA, Number=NA, Name=teamname) |>
+    calc_stats(batter_calculations, batter_cols_team)
+  out <- bind_rows(ind_stats, team_stats) |> mutate(G=NA)
+  out[c("Number", "Name", "G", "Lineup", batter_cols_team)]
+}
+
 pitcher_stats <- function(game, forSide, teamname=FALSE) {
   stopifnot(forSide %in% 1:2)
   x <- game$lineup |> filter(Side==forSide) |> select(-Side)
@@ -121,8 +121,6 @@ pitcher_stats <- function(game, forSide, teamname=FALSE) {
   out <- bind_rows(ind_stats, team_stats) |> arrange(Order) |> mutate(G=NA)
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
-
-
 
 all_stats <- function(games, team) {
   the_game_stats <- games |> select(stats) |> unnest(stats)
