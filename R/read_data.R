@@ -27,13 +27,12 @@ readgame <- function(file,
   out
 }
 
-prep_game <- function(game, rosters) {
+prep_game <- function(game) {
   stopifnot(is_tibble(game) && nrow(game)==1)
   game <- as.list(game)
   game$teams <- game$game[[1]]$Team
   game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
-  game$lineup <- game$game[[1]] |> select(Side, Team, Lineup) |> unnest(Lineup) |>
-    left_join(rosters, by=c("Team", "Number")) |> select(-Team)
+  game$lineup <- game$game[[1]] |> select(Side, Lineup) |> unnest(Lineup)
   game$game <- NULL
   game
 }
