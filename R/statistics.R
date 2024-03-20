@@ -42,9 +42,9 @@ pitcher_stats <- function(game, forSide, teamname=FALSE) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-game_add_stats <- function(games, rosters) {
+game_add_stats <- function(games) {
   for(i in seq_len(nrow(games))) {
-    g <- prep_game(games[i,], rosters)
+    g <- prep_game(games[i,])
     gg <- games$game[[i]]
     games$game[[i]] <-
       bind_cols(gg,
@@ -79,9 +79,8 @@ makestatsfile <- function(game, team, filename) {
     }
     x
   }
-  game <- flatten(game)
-  stats <- game$stats
   about <- game$about
+  stats <- game$game[[1]]
   k_us <- match(team, stats$Team)
   k_them <- setdiff(1:2, k_us)
   team2 <- stats$Team[k_them]
@@ -117,7 +116,8 @@ makeallstatsfiles <- function(gs, team) {
         names(link) <- "LINK TO SCORECARD"
         class(link) <- "hyperlink"
       }
-      list(header=list(sprintf("%s, %s", g$vs, g$when), link)) |> c(tmp)
+      vs <- setdiff(g$game[[1]]$Team, "Roseville")
+      list(header=list(sprintf("%s, %s", vs, when_format(g$when)), link)) |> c(tmp)
     }) |> setNames(code))
 }
 

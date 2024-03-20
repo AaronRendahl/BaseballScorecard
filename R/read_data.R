@@ -59,8 +59,8 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
     mutate(map_dfr(datafile, \(x) readgame(x, ...))) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
-    arrange(code)# |>
-    #game_add_stats()
+    arrange(code) |>
+    game_add_stats()
 
   if(resave && !missing(save.file)) {
     saveRDS(gs, save.file)
