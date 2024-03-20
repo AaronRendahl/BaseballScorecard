@@ -210,7 +210,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     if(missing(lineup)) {
       players <- nrow
     } else {
-      lineup <- filter(lineup, !is.na(Number))
+      lineup <- lineup |> filter(!is.na(Number)) |> mutate(Name=replace_na(Name, ""))
       players <- max(lineup$Lineup)
       for(i in 1:nrow(lineup)) {
         s1 <- textGrob(lineup$Number[i], x = 0.25, y = 0.1, just = c("left", "bottom"))
@@ -305,13 +305,10 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     }
   }
 
-  upper <- function(game, side, team = NA,
+  upper <- function(game, side,
+                    team = if(!missing(game)) game$teams[side] else NA,
                     header = c("none", "about", "score")) {
     header <- match.arg(header)
-    vs <- case_when(header == "score" ~ "",
-                    side == 2 ~ "@ ",
-                    side == 1 ~ "v. ",
-                    TRUE ~ "")
     dt <- if(header == "about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
@@ -357,6 +354,10 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     }
     name <- if(!is.na(team)) {
       haslogo <- team %in% names(logos)
+      vs <- case_when(header == "score" ~ "",
+                      side == 2 ~ "@ ",
+                      side == 1 ~ "v. ",
+                      TRUE ~ "")
       teamtext <- textGrob(paste0(vs, team),
                            x = unit(1 * haslogo, "snpc"),
                            y = 0.55,
