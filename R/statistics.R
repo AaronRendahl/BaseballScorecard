@@ -279,7 +279,10 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
 
 readrosters <- function(file) {
   ss <- readxl::excel_sheets(file)
-  lapply(ss, readxl::read_excel, path=file) |> setNames(ss)
+  tibble(Team=ss) |>
+    mutate(roster=map(Team, \(x) readxl::read_excel(path=file, sheet=x))) |>
+    unnest(roster) |>
+    select(Team, Number, Name)
 }
 
 all_stats <- function(games, team) {
