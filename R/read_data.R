@@ -1,5 +1,6 @@
 
 readgame <- function(file,
+                     rosters = tibble(Team=character(), Number=numeric()),
                      parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m"))) {
   message(file)
   ss <- readxl::excel_sheets(file)
@@ -8,13 +9,16 @@ readgame <- function(file,
   about <- if(ncol(tmp) > 1) tmp[[2]] else as.character(NA)
   g1 <- readxl::read_excel(file, "Lineup", skip=1, col_types="numeric")
   teams <- names(g1)[2:3]
-  stopifnot(teams %in% ss[2:3])
-  lineups <- g1 |> setNames(c("Lineup", "1", "2")) |> # 1=away, 2=home
-    pivot_longer(-Lineup,
-                 names_to="Side", names_transform=as.numeric,
+  stopifnot(teams %in% ss)
+  names(g1)[2:3] <- paste(names(g1)[2:3], 1:2, sep="_")
+  lineups <- g1 |>
+    pivot_longer(-Lineup, names_to=c("Team", "Side"),
+                 names_sep="_", names_transform=list(Side=as.integer),
                  values_to="Number", values_drop_na=TRUE) |>
-    nest(.by=Side, .key="Lineup") |>
-    left_join(tibble(Side=1:2, Team=teams), by="Side")
+    left_join(rosters, by=c("Team", "Number")) |>
+    arrange(Side, Lineup) |>
+    nest(Lineup=c(Lineup, Number, Name)) |>
+    select(Side, Team, Lineup)
   game <- lineups |> mutate(Plays = map2(Team, Lineup, \(team, lineup) {
     readxl::read_excel(file, sheet = team) |> makedata() |> left_join(lineup, by="Lineup") |>
       select(Row, Inning, Lineup, Batter=Number, Pitcher, everything())
@@ -37,8 +41,8 @@ prep_game <- function(game, rosters) {
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
                       codes=str_replace(basename(files), gamecode, "\\1"),
-                      rosters=c(),
-                      save.file, resave=!missing(save.file)) {
+                      save.file, resave=!missing(save.file),
+                      ...) {
 
   gs <- tibble(code=codes, datafile=files) |> mutate(mtime.now=file.mtime(datafile))
   if(!missing(save.file) && file.exists(save.file)) {
@@ -53,11 +57,11 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
   # print(split(gs$datafile, gs$status))
   gs <- gs |> filter(status %in% c("new", "update")) |> select(code, datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
-    mutate(map_dfr(datafile, readgame)) |>
+    mutate(map_dfr(datafile, \(x) readgame(x, ...))) |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
-    arrange(code) |>
-    game_add_stats(rosters)
+    arrange(code)# |>
+    #game_add_stats()
 
   if(resave && !missing(save.file)) {
     saveRDS(gs, save.file)
