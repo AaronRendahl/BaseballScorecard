@@ -1,3 +1,13 @@
+get_score <- function(game) {
+  score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
+    pivot_wider(names_from=Inning, values_from=R) |>
+    arrange(Side) |> select(-Side) |>
+    as.matrix()
+  score <- cbind(score, R=rowSums(score))
+  rownames(score) <- game$teams
+  score
+}
+
 ## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
 # d1 |> select(Lineup, Outcome, B4) |> mutate(RBI_by=if_else(Outcome=="HR", Lineup, B4)) |>
 #   filter(!is.na(RBI_by)) |> select(Lineup=RBI_by) |>
@@ -122,6 +132,16 @@ pitcher_stats <- function(game, forSide, teamname=FALSE) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
+game_stats <- function(game, rosters) {
+  game <- flatten(game)
+  tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"), Side=1:2,
+         vs=names(game$lineup)[3:2],
+         Pitcher_Stats=list(pitcher_stats(game, rosters, forSide=1),
+                            pitcher_stats(game, rosters, forSide=2)),
+         Batter_Stats=list(batter_stats(game, rosters, forSide=1),
+                           batter_stats(game, rosters, forSide=2)))
+}
+
 all_stats <- function(games, team) {
   the_game_stats <- games |> select(stats) |> unnest(stats)
   b.all <- the_game_stats |> filter(Team==team) |> select(Batter_Stats) |> unnest(Batter_Stats) |>
@@ -134,26 +154,6 @@ all_stats <- function(games, team) {
     group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
     calc_stats(pitcher_calculations, pitcher_cols_team)
   list(Batting=b.all, Pitching=p.all)
-}
-
-get_score <- function(game) {
-  score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
-    pivot_wider(names_from=Inning, values_from=R) |>
-    arrange(Side) |> select(-Side) |>
-    as.matrix()
-  score <- cbind(score, R=rowSums(score))
-  rownames(score) <- game$teams
-  score
-}
-
-game_stats <- function(game, rosters) {
-  game <- flatten(game)
-  tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"), Side=1:2,
-         vs=names(game$lineup)[3:2],
-         Pitcher_Stats=list(pitcher_stats(game, rosters, forSide=1),
-                            pitcher_stats(game, rosters, forSide=2)),
-         Batter_Stats=list(batter_stats(game, rosters, forSide=1),
-                           batter_stats(game, rosters, forSide=2)))
 }
 
 makestatsfile <- function(game, team, filename) {
