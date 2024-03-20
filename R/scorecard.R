@@ -1,3 +1,13 @@
+prep_game <- function(game, rosters) {
+  game <- as.list(game)
+  game$teams <- game$game[[1]]$Team
+  game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
+  game$lineup <- game$game[[1]] |> select(Side, Team, Lineup) |> unnest(Lineup) |>
+    left_join(rosters, by=c("Team", "Number")) |> select(-Team)
+  game$game <- NULL
+  game
+}
+
 ## ## variables needed from Game file:
 ## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
 ##
@@ -10,7 +20,7 @@
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
 
 
-scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
+scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),
                       team_name = "", logos = list(),
                       footer_text = "",
@@ -295,13 +305,12 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
     }
   }
 
-  upper <- function(game, header = c("none", "about", "score"),
-                    team = NA, who = c("home", "away")) {
+  upper <- function(game, side, team = NA,
+                    header = c("none", "about", "score")) {
     header <- match.arg(header)
-    who <- match.arg(who)
     vs <- case_when(header == "score" ~ "",
-                    who == "home" ~ "@ ",
-                    who == "away" ~ "v. ",
+                    side == 2 ~ "@ ",
+                    side == 1 ~ "v. ",
                     TRUE ~ "")
     dt <- if(header == "about") {
       if(missing(game)) {
@@ -331,10 +340,9 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
       a4 <- segmentsGrob(x0 = 0.65, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
-        score <- get_score(game) |> as.data.frame() |>
-          rownames_to_column("team")
+        score <- get_score(game) |> as.data.frame()
         names(score)[ncol(score)] <- ninnings + 1
-        teams <- score$team
+        teams <- rownames(score)
         score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
           mutate(inning = as.integer(inning)) |>
           mutate(xx = xx[inning], yy=yy[team]) |>
@@ -418,27 +426,20 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
     gf
   }
 
-  mainbox <- function(g, lineup, nrow=11) {
+  mainbox <- function(plays, lineup, nrow=11) {
     gf <- frameGrob(layout=grid.layout(ncol=2, nrow=1,
                                         widths=c(panel.left, main.width)))
     gf <- placeGrob(gf, row=1, col=1, grob=left(lineup, nrow=nrow))
-    gf <- placeGrob(gf, row=1, col=2, grob=boxes(g, nrow=nrow))
+    gf <- placeGrob(gf, row=1, col=2, grob=boxes(plays, nrow=nrow))
     gf
   }
 
-  makeside <- function(game, who, team=NA, header, nrow) {
+  makeside <- function(game, side, team=NA, header, nrow) {
     if(!missing(game)) {
-      k <- match(who, c("away", "home"))
-      g <- game$plays |> filter(Side==k)
-      lineup <- game$lineup[,c(1,k+1)]
-      team <- colnames(game$lineup)[k+1]
-      names(lineup)[2] <- "Number"
-      if(team %in% names(rosters)) {
-        lineup <- left_join(lineup, rosters[[team]], by="Number")
-      }
-      header.grob <- upper(game, team=team, who=who, header=header)
-      main.grob <- mainbox(g, lineup, nrow=nrow)
-      footer.grob <- lower(g)
+      header.grob <- upper(game, side, header=header)
+      main.grob <- mainbox(game$plays |> filter(Side==side),
+                           game$lineup |> filter(Side==side), nrow=nrow)
+      footer.grob <- lower(game$plays |> filter(Side==side))
     } else {
       header.grob <- upper(header=header, team=team)
       main.grob <- mainbox(nrow=nrow)
@@ -461,13 +462,12 @@ scorecard <- function(game, rosters=c(), file="_scorecard_tmp.pdf",
   }
 
   if(missing(game)) {
-    gf1 <- makeside(header="score", team=team_name, nrow=n_players[1])
+    gf1 <- makeside(header="score", nrow=n_players[1], team=team_name)
     gf2 <- makeside(header="about", nrow=n_players[2])
   } else {
-    tmp <- game$lineup |> pivot_longer(-Lineup, values_drop_na=TRUE)
-    nr <- max(c(tmp$Lineup, 11))
-    sides <- c("away", "home")
-    if(team_name==names(game$lineup)[3]) sides <- rev(sides)
+    nr <- max(c(11, game$lineup$Lineup))
+    sides <- 1:2
+    if(team_name==game$teams[2]) sides <- rev(sides)
     gf1 <- makeside(game, sides[1], nrow=nr, header="score")
     gf2 <- makeside(game, sides[2], nrow=nr, header="about")
   }
