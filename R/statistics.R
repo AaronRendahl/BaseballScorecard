@@ -229,18 +229,19 @@ readgame <- function(file,
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, col_types="text", .name_repair="minimal")
   when <- parse_time(tmp[[1]])
   about <- if(ncol(tmp) > 1) tmp[[2]] else as.character(NA)
-  g1 <- readxl::read_excel(file, "Lineup", skip=1, col_types=c("text", "numeric", "numeric"))
+  g1 <- readxl::read_excel(file, "Lineup", skip=1, col_types="numeric")
   teams <- names(g1)[2:3]
   stopifnot(teams %in% ss[2:3])
-  plays <- lapply(teams, \(x) readxl::read_excel(file, sheet = x) |> makedata())
-  lineup <- g1 |> setNames(c("Lineup", "1", "2")) |> # 1=away, 2=home
+  lineups <- g1 |> setNames(c("Lineup", "1", "2")) |> # 1=away, 2=home
     pivot_longer(-Lineup,
                  names_to="Side", names_transform=as.numeric,
                  values_to="Number", values_drop_na=TRUE) |>
-    nest(.by=Side, .key="Lineup")
-  game <- tibble(Side=1:2, Team=teams, Plays=plays) |>
-    full_join(lineup, by="Side") |>
-    arrange(Side) |> select(Side, Team, Lineup, Plays)
+    nest(.by=Side, .key="Lineup") |>
+    left_join(tibble(Side=1:2, Team=teams), by="Side")
+  game <- lineups |> mutate(Plays=map2(Team, Lineup, \(team, lineup) {
+    readxl::read_excel(file, sheet = team) |> makedata() |> left_join(lineup, by="Lineup") |>
+      select(Row, Inning, Lineup, Batter=Number, Pitcher, everything())
+  }))
   out <- tibble(when=when, about=about, game=list(game))
   out
 }
