@@ -9,6 +9,10 @@
 ## PitchesSoFar: pitches so far by this pitcher
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
 
+when_format <- function(x) {
+  paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
+         format(x, "%I:%M%P") |> str_remove("^0") |> str_remove("m$"))
+}
 
 scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),
@@ -307,7 +311,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                  just = c("left", "top"),
                  gp = gpar(fontsize = headertextsize))
       } else {
-        textGrob(sprintf("%s: %s", game$about, game$when),
+        textGrob(sprintf("%s: %s", game$about, when_format(game$when)),
                  x = 0.95,
                  y = 0.55,
                  just = c("right", "center"),
