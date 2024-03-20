@@ -73,18 +73,14 @@ batter_counting_stats <- function(d) {
       .groups="drop")
 }
 
-batter_stats <- function(game, rosters, forSide, teamname=TRUE) {
+batter_stats <- function(game, forSide, teamname=TRUE) {
   stopifnot(forSide %in% 1:2)
-  x <- game$lineup[c(1, forSide+1)]
-  d <- game$plays |> filter(Side==forSide)
-  team <- colnames(x)[2]
-  teamname <- if(teamname) team else "Team"
-  names(x)[2] <- "Number"
-  if(team %in% names(rosters)) {
-    x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
-  }
+  x <- game$lineup |> filter(Side==forSide) |> select(-Side)
+  d <- game$plays  |> filter(Side==forSide) |> select(-Side)
+  teamname <- if(teamname) game$teams[forSide] else "Team"
+
   stats <- batter_counting_stats(d)
-  ind_stats <- stats |> left_join(x, by="Lineup") |> #mutate(BA=getBA(H, AB))
+  ind_stats <- stats |> left_join(x, by="Lineup") |>
     calc_stats(batter_calculations, batter_cols_ind)
   team_stats <- stats |> summarize(across(-c(Lineup), sum)) |>
     mutate(Lineup=NA, Number=NA, Name=teamname) |>
@@ -110,22 +106,17 @@ pitcher_counting_stats <- function(d) {
       .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
 }
 
-pitcher_stats <- function(game, rosters, forSide) {
+pitcher_stats <- function(game, forSide, teamname=FALSE) {
   stopifnot(forSide %in% 1:2)
-  x <- game$lineup[c(1, forSide + 1)]
-  d <- game$plays |> filter(Side == 3 - forSide)   ## need to use opposite side!
-  team <- colnames(x)[2]
-  ## x has Lineup, <Team Name>; rosters has Number, Name
-  ## <Team Name> to Number, then join by Number
-  names(x)[2] <- "Number"
-  if(team %in% names(rosters)) {
-    x <- x |> left_join(select(rosters[[team]], c(Number, Name)), by="Number")
-  }
+  x <- game$lineup |> filter(Side==forSide) |> select(-Side)
+  d <- game$plays  |> filter(Side==3 - forSide) |> select(-Side) ## need to use opposite side!
+  teamname <- if(teamname) game$teams[forSide] else "Team"
+
   stats <- pitcher_counting_stats(d)
   ind_stats <- stats |> left_join(x, by="Number") |>
     calc_stats(pitcher_calculations, pitcher_cols_ind)
   team_stats <- stats |> summarize(across(-c(Number, Order), sum)) |>
-    mutate(Number=NA, Order=Inf, Name="Team") |>
+    mutate(Number=NA, Order=Inf, Name=teamname) |>
     calc_stats(pitcher_calculations, pitcher_cols_team)
   out <- bind_rows(ind_stats, team_stats) |> arrange(Order) |> mutate(G=NA)
   out[c("Number", "Name", "G", pitcher_cols_team)]
