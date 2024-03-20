@@ -297,10 +297,13 @@ all_stats <- function(games, team) {
 }
 
 get_score <- function(game) {
-  a1 <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
-    pivot_wider(names_from=Inning, values_from=R) |> as.data.frame() |>
-    select(-Side) |> as.matrix()
-  cbind(a1, R=rowSums(a1))
+  score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
+    pivot_wider(names_from=Inning, values_from=R) |>
+    arrange(Side) |> select(-Side) |>
+    as.matrix()
+  score <- cbind(score, R=rowSums(score))
+  rownames(score) <- game$teams
+  score
 }
 
 game_stats <- function(game, rosters) {
