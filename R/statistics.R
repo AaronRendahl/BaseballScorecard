@@ -246,6 +246,17 @@ readgame <- function(file,
   out
 }
 
+prep_game <- function(game, rosters) {
+  stopifnot(is_tibble(game) && nrow(game)==1)
+  game <- as.list(game)
+  game$teams <- game$game[[1]]$Team
+  game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
+  game$lineup <- game$game[[1]] |> select(Side, Team, Lineup) |> unnest(Lineup) |>
+    left_join(rosters, by=c("Team", "Number")) |> select(-Team)
+  game$game <- NULL
+  game
+}
+
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
                       codes=str_replace(basename(files), gamecode, "\\1"),

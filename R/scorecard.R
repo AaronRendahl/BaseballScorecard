@@ -1,13 +1,3 @@
-prep_game <- function(game, rosters) {
-  game <- as.list(game)
-  game$teams <- game$game[[1]]$Team
-  game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
-  game$lineup <- game$game[[1]] |> select(Side, Team, Lineup) |> unnest(Lineup) |>
-    left_join(rosters, by=c("Team", "Number")) |> select(-Team)
-  game$game <- NULL
-  game
-}
-
 ## ## variables needed from Game file:
 ## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
 ##
