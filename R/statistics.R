@@ -132,14 +132,18 @@ pitcher_stats <- function(game, forSide, teamname=FALSE) {
   out[c("Number", "Name", "G", pitcher_cols_team)]
 }
 
-game_stats <- function(game, rosters) {
-  game <- flatten(game)
-  tibble(Team=names(game$lineup)[2:3], Role=c("away", "home"), Side=1:2,
-         vs=names(game$lineup)[3:2],
-         Pitcher_Stats=list(pitcher_stats(game, rosters, forSide=1),
-                            pitcher_stats(game, rosters, forSide=2)),
-         Batter_Stats=list(batter_stats(game, rosters, forSide=1),
-                           batter_stats(game, rosters, forSide=2)))
+game_add_stats <- function(games, rosters) {
+  for(i in seq_len(nrow(games))) {
+    g <- prep_game(games[i,], rosters)
+    gg <- games$game[[i]]
+    games$game[[i]] <-
+      bind_cols(gg,
+                tibble(Pitcher_Stats = list(pitcher_stats(g, gg$Side[1]),
+                                            pitcher_stats(g, gg$Side[2])),
+                       Batter_Stats  = list(batter_stats(g, gg$Side[1]),
+                                            batter_stats(g, gg$Side[2]))))
+  }
+  games
 }
 
 all_stats <- function(games, team) {
