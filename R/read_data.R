@@ -62,7 +62,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
   if(resave && !missing(save.file)) {
     saveRDS(gs, save.file)
   }
-  gs |> select(-datafile, -mtime)
+  gs
 }
 
 readrosters <- function(file) {
