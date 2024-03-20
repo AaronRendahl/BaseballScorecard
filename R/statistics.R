@@ -56,20 +56,6 @@ game_add_stats <- function(games) {
   games
 }
 
-all_stats <- function(games, team) {
-  the_game_stats <- games |> select(stats) |> unnest(stats)
-  b.all <- the_game_stats |> filter(Team==team) |> select(Batter_Stats) |> unnest(Batter_Stats) |>
-    mutate(G=1) |>
-    group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
-    mutate(Lineup=NA) |>
-    calc_stats(batter_calculations, batter_cols_team)
-  p.all <- the_game_stats |> filter(Team==team) |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
-    mutate(G=1) |>
-    group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
-    calc_stats(pitcher_calculations, pitcher_cols_team)
-  list(Batting=b.all, Pitching=p.all)
-}
-
 makestatsfile <- function(game, team, filename) {
   add_title <- function(x, title) {
     x <- rbind(names(x), x)
@@ -108,18 +94,34 @@ makestatsfile <- function(game, team, filename) {
 makeallstatsfiles <- function(gs, team) {
   havelinks <- "scorecard_link" %in% names(gs)
   gs |> mutate(out=map(seq_len(nrow(gs)), function(idx) {
-      g <- gs[idx,]
-      tmp <- makestatsfile(g, team)
-      link <- NULL
-      if(havelinks) {
-        link <- scorecard_link[idx]
-        names(link) <- "LINK TO SCORECARD"
-        class(link) <- "hyperlink"
-      }
-      vs <- setdiff(g$game[[1]]$Team, "Roseville")
-      list(header=list(sprintf("%s, %s", vs, when_format(g$when)), link)) |> c(tmp)
-    }) |> setNames(code))
+    g <- gs[idx,]
+    tmp <- makestatsfile(g, team)
+    link <- NULL
+    if(havelinks) {
+      link <- scorecard_link[idx]
+      names(link) <- "LINK TO SCORECARD"
+      class(link) <- "hyperlink"
+    }
+    vs <- setdiff(g$game[[1]]$Team, "Roseville")
+    list(header=list(sprintf("%s, %s", vs, when_format(g$when)), link)) |> c(tmp)
+  }) |> setNames(code))
 }
+
+all_stats <- function(games, team) {
+  the_game_stats <- games |> select(stats) |> unnest(stats)
+  b.all <- the_game_stats |> filter(Team==team) |> select(Batter_Stats) |> unnest(Batter_Stats) |>
+    mutate(G=1) |>
+    group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
+    mutate(Lineup=NA) |>
+    calc_stats(batter_calculations, batter_cols_team)
+  p.all <- the_game_stats |> filter(Team==team) |> select(Pitcher_Stats) |> unnest(Pitcher_Stats) |>
+    mutate(G=1) |>
+    group_by(Number, Name) |> summarize(across(everything(), sum)) |> ungroup() |>
+    calc_stats(pitcher_calculations, pitcher_cols_team)
+  list(Batting=b.all, Pitching=p.all)
+}
+
+
 
 get_all_stats <- function(gs, team) {
   all_the_stats <- all_stats(gs, team=team)
