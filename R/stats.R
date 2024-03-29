@@ -62,7 +62,9 @@ calc_stats <- function(data, calculations, columns) {
 }
 
 counting_stats <- function(d) {
-  d |> left_join(key, by="Outcome") |>
+  d |>
+    mutate(Outcome = if_else(!is.na(B1), B1, stringr::str_sub(Play, 1, 1)) |> stringr::str_replace("^E.*", "E")) |>
+    left_join(key, by="Outcome") |>
     mutate( Strikes = Strikes + (Pitch == "Strike"),
             Balls   = Balls + (Pitch == "Ball"),
             Outs    = Out + RunnersOut,
