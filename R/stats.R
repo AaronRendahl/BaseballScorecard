@@ -66,6 +66,7 @@ counting_stats <- function(d) {
               OutDuring=get_OutDuring(B2, B3, B4),
               RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring),
               Contact=get_Contact(Play, B1)) |>
+    select(-Out) |>
     left_join(key, by="Outcome") |>
     mutate( Strikes = Strikes + (Pitch == "Strike"),
             Balls   = Balls + (Pitch == "Ball"),
