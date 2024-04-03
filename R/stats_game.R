@@ -3,7 +3,7 @@ get_score <- function(game) {
     pivot_wider(names_from=Inning, values_from=R) |>
     arrange(Side) |> select(-Side) |>
     as.matrix()
-  score <- cbind(score, R=rowSums(score))
+  score <- cbind(score, R=rowSums(score, na.rm=TRUE))
   rownames(score) <- game$teams
   score
 }
