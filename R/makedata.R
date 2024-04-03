@@ -1,11 +1,17 @@
-## helper function
-get_ToBase <- function(Outcome, B1, B2, B3, B4) {
-  f1 <- function(Outcome, B1, B2, B3, B4) {
+## helper functions
+
+get_ToBase <- function(B1, B2, B3, B4, pattern.out="^X") {
+  ## this needs to be a vectorized function, so
+  ## here's a function that can handle one at bat
+  f1 <- function(B1, B2, B3, B4) {
+    if(is.na(B1)) return(0)
     B <- c("out", B1, B2, B3, B4)
     to1 <- max(which(!is.na(B))-1)
-    max(key$Base[match(Outcome, key$Outcome)], to1) + stringr::str_detect(B[to1+1], "^X")*(-0.5)
+    toX <- replace_na(key$Base[match(B1, key$Outcome)], 0)
+    max(toX, to1) + stringr::str_detect(B[to1+1], pattern.out)*(-0.5)
   }
-  purrr::pmap_dbl(list(Outcome, B1, B2, B3, B4), f1)
+  ## and then we'll map across it to vectorize it
+  purrr::pmap_dbl(list(B1, B2, B3, B4), f1)
 }
 get_OutDuring <- function(B2, B3, B4) {
   f1 <- function(B2, B3, B4) {
@@ -79,8 +85,8 @@ makedata <- function(d) {
       ## .0$ is in case Google to xlsx adds a .0 to numbers
       x |> stringr::str_remove(pattern="^X") |> stringr::str_remove(pattern="\\.0$")
     })) |>
+    mutate(ToBase=get_ToBase(B1, B2, B3, B4)) |>
     mutate(Outcome=get_Outcome(Play, B1),
-           ToBase=get_ToBase(Outcome, B1, B2, B3, B4),
            OutDuring=get_OutDuring(B2, B3, B4),
            RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring),
            Contact=get_Contact(Play, B1)) |>
