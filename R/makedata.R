@@ -13,6 +13,11 @@ get_ToBase <- function(B1, B2, B3, B4, pattern.out="^X") {
   ## and then we'll map across it to vectorize it
   purrr::pmap_dbl(list(B1, B2, B3, B4), f1)
 }
+
+get_PitchesAtBat <- function(Count, Outcome) {
+  Count + (key$Pitch[match(Outcome, key$Outcome)]!="No Pitch")*1L
+}
+
 get_OutDuring <- function(B2, B3, B4) {
   f1 <- function(B2, B3, B4) {
     out <- NA
@@ -51,9 +56,6 @@ get_RunnersOut <- function(Lineup, Inning, OutDuring) {
     }
   }
   pull(out, RunnersOut)
-}
-get_PitchesAtBat <- function(Count, Outcome) {
-  Count + (key$Pitch[match(Outcome, key$Outcome)]!="No Pitch")*1L
 }
 get_Contact <- function(Play, B1) {
   ## do have some 1Bs with unknown Play for other teams...
