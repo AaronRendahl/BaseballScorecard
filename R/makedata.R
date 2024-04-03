@@ -89,10 +89,6 @@ makedata <- function(d) {
     })) |>
     mutate(ToBase = get_ToBase(B1, B2, B3, B4),
            PitchesAtBat = Balls + Strikes + Fouls + get_LastPitch(Outcome)) |>
-    mutate(Outcome=get_Outcome(Play, B1),
-           OutDuring=get_OutDuring(B2, B3, B4),
-           RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring),
-           Contact=get_Contact(Play, B1)) |>
     mutate(Row = 1:n()) |>
     select(Inning, Row, Lineup, everything())
 }
