@@ -56,7 +56,7 @@ prep_game2 <- function(game) {
   })
 
   px <- g |> select(Side, Plays) |> unnest(Plays) |>
-    arrange(Inning, Side, Row) |> mutate(Row=1:n()) |>
+    arrange(Inning, Side, Row) |>
     left_join(lx |> select(Side, Pitcher=Number, Pitcher_Code=Player) |> mutate(Side=3-Side),
               by=c("Side", "Pitcher")) |>
     left_join(lx |> select(Side, Lineup, Batter_Code=Player),
