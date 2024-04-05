@@ -49,10 +49,21 @@ find_runners <- function(plays, key.Base) {
     select(idx, BatterID)
   rx |> left_join(r1, by="idx") |>
     select(-idx) |>
-    mutate(onPitch=case_when(is.na(BatterID) ~ 1000,
-                             How %in% c("P", "E", "FC") ~ 100,
-                             TRUE ~ 0)) |>
+    select(Inning, Side, BatterID, Lineup, Runner, everything()) |>
+    # TODO: allow this to be a parameter, and also add option to force them
+    mutate(onPitch=case_when(is.na(BatterID) ~ 1000,           # after this play, sometime...
+                             How %in% c("P", "E", "FC") ~ 100, # after this specific play
+                             TRUE ~ 0),                        # before this specific play
+           .after=BatterID) |>
+    # if know when made it to a previous base, then everything after that must be after that
+    arrange(RunnerID, B) |>
+    fill(BatterID) |> fill(Lineup) |>
+    # otherwise, must be after they batted
     mutate(BatterID=if_else(is.na(BatterID), RunnerID, BatterID),
            Lineup=if_else(is.na(Lineup), Runner, Lineup)) |>
-    select(Inning, Side, BatterID, Lineup, Runner, everything())
+    (\(x) { # ERROR CHECK: RunnerID > BatterID, or if = onPitch is not 0
+      tmp <- x |> filter(RunnerID > BatterID | (RunnerID == BatterID & onPitch <= 0))
+      if(nrow(tmp)) {print(tmp); stop("became runner before batted!")}
+      x
+    })()
 }
