@@ -6,7 +6,7 @@ addBatterID <- function(x) {
 
 find_runners <- function(plays, key.Base) {
   rx <- plays |> filter(!is.na(B1)) |>
-    select(RunnerID=BatterID, Runner=Lineup, Inning, Side, B1, B2, B3, B4) |>
+    select(RunnerID=BatterID, Runner=Lineup, Pitcher, Inning, Side, B1, B2, B3, B4) |>
     # how many bases did they get on their at bat
     left_join(key.Base, by="B1") |>
     mutate(Base=case_when(!is.na(Base) ~ Base, !is.na(B1) ~ 1L, TRUE ~0L)) |>
@@ -57,7 +57,9 @@ find_runners <- function(plays, key.Base) {
            .after=BatterID) |>
     # if know when made it to a previous base, then everything after that must be after that
     arrange(RunnerID, B) |>
+    group_by(RunnerID) |>
     fill(BatterID) |> fill(Lineup) |>
+    ungroup() |>
     # otherwise, must be after they batted
     mutate(BatterID=if_else(is.na(BatterID), RunnerID, BatterID),
            Lineup=if_else(is.na(Lineup), Runner, Lineup)) |>
