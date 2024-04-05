@@ -85,7 +85,7 @@ makedata <- function(d) {
     mutate(across(c("Balls", "Strikes", "Fouls"), \(x) replace_na(x, 0L))) |>
     mutate(across(c("B2", "B3", "B4"), \(x) {
       ## .0$ is in case Google to xlsx adds a .0 to numbers
-      x |> stringr::str_remove(pattern="^X") |> stringr::str_remove(pattern="\\.0$")
+      x |> stringr::str_remove(pattern="\\.0$")
     })) |>
     mutate(ToBase = get_ToBase(B1, B2, B3, B4),
            PitchesAtBat = Balls + Strikes + Fouls + get_LastPitch(Play)) |>
