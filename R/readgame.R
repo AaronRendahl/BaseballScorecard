@@ -32,10 +32,11 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
                       codes=str_replace(basename(files), gamecode, "\\1"),
                       save.file, resave=!missing(save.file),
+                      reload=FALSE,
                       ...) {
 
   gs <- tibble(code=codes, datafile=files) |> mutate(mtime.now=file.mtime(datafile))
-  if(!missing(save.file) && file.exists(save.file)) {
+  if(!reload && !missing(save.file) && file.exists(save.file)) {
     gs <- full_join(gs, read_rds(save.file), by=c("code", "datafile"))
   }
   gs <- gs |> bind_rows(tibble(mtime=as.POSIXct(c()))) |>
