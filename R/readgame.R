@@ -18,9 +18,6 @@ readgame <- function(file,
     arrange(Side, Lineup) |>
     nest(Lineup=c(Lineup, Number, Name)) |>
     select(Side, Team, Lineup)
-  #game <- lineups |> mutate(Plays = map2(Team, Lineup, \(team, lineup) {
-  #  readxl::read_excel(file, sheet = team) |> makedata() |> left_join(lineup, by="Lineup") |>
-  #  select(Row, Inning, Lineup, Batter=Number, Pitcher, everything())
   game <- lineups |> mutate(Plays = map(Team, \(team) {
         readxl::read_excel(file, sheet = team) |> makedata() |>
       select(Row, Inning, Lineup, Pitcher, everything())
