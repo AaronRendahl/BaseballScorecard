@@ -21,9 +21,6 @@ makedata <- function(d) {
   ## now process as needed, adding variables
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
   ## PitchesAtBat: total pitches during at-bat
-  ## Outcome: to match Outcome column in key
-  ## OutDuring: if batter gets out later, during what at-bat did it happen?
-  ## RunnersOut: how many runners got out during this at bat?
   d |>
     mutate(across(c("Balls", "Strikes", "Fouls"), \(x) replace_na(x, 0L))) |>
     mutate(across(c("B2", "B3", "B4"), \(x) {
