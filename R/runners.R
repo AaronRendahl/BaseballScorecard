@@ -1,5 +1,5 @@
 # need to have added "Base" to plays to specify how many bases the batter initially made it to
-find_runners <- function(plays, pattern.out="^X") {
+find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) {
   rx <- plays |> filter(!is.na(B1)) |>
     select(RunnerID=BatterID, Runner=Lineup, Pitcher, Row, Inning, Side, Base, B2, B3, B4) |>
     # now pivot longer and remove any rows that they reached due to their at bat
@@ -46,9 +46,9 @@ find_runners <- function(plays, pattern.out="^X") {
     select(-idx) |>
     select(Inning, Side, BatterID, Lineup, Runner, everything()) |>
     # TODO: allow this to be a parameter, and also add option to force them
-    mutate(onPitch=case_when(is.na(BatterID) ~ 1000,           # after this play, sometime...
-                             How %in% c("P", "E", "FC") ~ 100, # after this specific play
-                             TRUE ~ 0),                        # before this specific play
+    mutate(onPitch=case_when(is.na(BatterID) ~ 1000,    # after this play, sometime...
+                             How %in% after.play ~ 100, # after this specific play
+                             TRUE ~ 0),                 # before this specific play
            .after=BatterID) |>
     # if know when made it to a previous base, then everything after that must be after that
     arrange(RunnerID, Base) |>
