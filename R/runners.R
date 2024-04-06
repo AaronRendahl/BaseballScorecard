@@ -14,14 +14,17 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     ungroup() |>
     # and now remove bases they didn't get to
     filter(!is.na(value) & value!=".") |>
-    # now can split the value into Out/How/When/Note
+    mutate(idx=1:n()) |>
+    # now can split the value into Out/How/Lineup/onPitch/Note
     # if how not specified, assume it was part of the play
     mutate(Out=str_detect(value, pattern.out)*1L,
            value=str_remove(value, pattern.out),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
-    separate_wider_regex(value, c(How="[^0-9]*", Lineup="[0-9]+", Note=".*"), too_few="align_start") |>
+    separate_wider_regex(value, c(How="[^0-9]*", Lineup="[0-9-.]+", Note=".*"), too_few="align_start") |>
+    separate(Lineup, c("Lineup", "onPitch"), sep="[.-]", fill = "right") |>
+    mutate(Note=str_remove(Note, "^/")) |>
     mutate(Lineup=as.integer(Lineup)) |>
-    mutate(idx=1:n())
+    mutate(onPitch=as.numeric(onPitch))
 
   p1 <- px |> select(BatterID, Inning, Side, Lineup) |> unique()
   r1 <- rx |> filter(!is.na(Lineup)) |>
@@ -45,8 +48,8 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
   rx |> left_join(r1, by="idx") |>
     select(-idx) |>
     select(Inning, Side, BatterID, Lineup, Runner, everything()) |>
-    # TODO: allow this to be a parameter, and also add option to force them
-    mutate(onPitch=case_when(is.na(BatterID) ~ 1000,    # after this play, sometime...
+    mutate(onPitch=case_when(!is.na(onPitch) ~ onPitch,
+                             is.na(BatterID) ~ 1000,    # after this play, sometime...
                              How %in% after.play ~ 100, # after this specific play
                              TRUE ~ 0),                 # before this specific play
            .after=BatterID) |>
@@ -72,7 +75,7 @@ make_plays <- function(g,
   stopifnot(is_tibble(g) & nrow(g)==1)
   p2 <- g$game[[1]] |> select(Side, Plays) |> unnest(Plays)
 
-  p2 |>
+  px <- p2 |>
     ## add BatterID
     arrange(Inning, Side, Row) |>
     mutate(x=Lineup!=lag(Lineup, default=0), .by=c(Side, Inning)) |>
