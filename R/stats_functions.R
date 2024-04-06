@@ -1,3 +1,7 @@
+## Outcome: to match Outcome column in key
+## OutDuring: if batter gets out later, during what at-bat did it happen?
+## RunnersOut: how many runners got out during this at bat?
+
 get_OutDuring <- function(B2, B3, B4) {
   f1 <- function(B2, B3, B4) {
     out <- NA
