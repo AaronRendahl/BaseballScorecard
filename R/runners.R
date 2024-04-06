@@ -1,7 +1,7 @@
 # need to have added "Base" to plays to specify how many bases the batter initially made it to
 find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) {
   rx <- plays |> filter(!is.na(B1)) |>
-    select(RunnerID=BatterID, Runner=Lineup, Pitcher, Row, Inning, Side, Base, B2, B3, B4) |>
+    select(AtBatID_Runner=AtBatID, Runner=Lineup, Pitcher, Row, Inning, Side, Base, B2, B3, B4) |>
     # now pivot longer and remove any rows that they reached due to their at bat
     pivot_longer(c(B2, B3, B4), names_to="B") |>
     mutate(B=as.integer(str_sub(B, 2, 2))) |>
@@ -9,7 +9,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     select(-Base) |>
     rename(Base="B") |>
     # now backfill for any that they moved two bases on the same play
-    group_by(RunnerID) |>
+    group_by(AtBatID_Runner) |>
     fill(value, .direction="up") |>
     ungroup() |>
     # and now remove bases they didn't get to
@@ -26,46 +26,47 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     mutate(Lineup=as.integer(Lineup)) |>
     mutate(onPitch=as.numeric(onPitch))
 
-  p1 <- plays |> select(BatterID, Inning, Side, Lineup) |> unique()
+  p1 <- plays |> select(AtBatID, BatterID, Inning, Side, Lineup) |> unique()
   r1 <- rx |> filter(!is.na(Lineup)) |>
-    select(idx, RunnerID, Inning, Side, Lineup) |>
+    select(idx, AtBatID_Runner, Inning, Side, Lineup) |>
     left_join(p1, by=c("Inning", "Side", "Lineup")) |>
     # if batted through in an inning, there could be two matches,
     # need to get the first one that is at or after the runner
-    mutate(ok = BatterID == min(BatterID[BatterID >= RunnerID]), .by="idx") |>
+    mutate(ok = AtBatID == min(AtBatID[AtBatID >= AtBatID_Runner]), .by="idx") |>
     (\(x) { # ERROR CHECK: each should have only one that is found
-      tmp <- x |> mutate(nok=sum(ok), .by=idx) |> filter(nok!=1)
+      tmp <- x |> mutate(nok=sum(ok, na.rm=TRUE), .by=idx) |> filter(nok!=1)
       if(nrow(tmp)) {print(tmp); stop("exactly 1 batter not found")}
       x
     })() |>
     filter(is.na(ok) | ok) |>
     (\(x) { # ERROR CHECK: if have Lineup, should have found a RunnerID
-      tmp <- x |> filter(!is.na(Lineup) & is.na(RunnerID))
+      tmp <- x |> filter(!is.na(Lineup) & is.na(AtBatID_Runner))
       if(nrow(tmp)) {print(tmp); stop("> 1 batter found")}
       x
     })() |>
-    select(idx, BatterID)
+    select(idx, AtBatID)
   rx |> left_join(r1, by="idx") |>
     select(-idx) |>
-    select(Inning, Side, BatterID, Lineup, Runner, everything()) |>
+    select(Inning, Side, AtBatID, AtBatID_Runner, Lineup, Runner, everything()) |>
     mutate(onPitch=case_when(!is.na(onPitch) ~ onPitch,
-                             is.na(BatterID) ~ 1000,    # after this play, sometime...
-                             How %in% after.play ~ 100, # after this specific play
-                             TRUE ~ 0),                 # before this specific play
-           .after=BatterID) |>
+                             is.na(AtBatID) ~ 1000L,     # after this play, sometime...
+                             How %in% after.play ~ 100L, # after this specific play
+                             TRUE ~ 0L),                 # before this specific play
+           .after=AtBatID) |>
     # if know when made it to a previous base, then everything after that must be after that
-    arrange(RunnerID, Base) |>
-    group_by(RunnerID) |>
-    fill(BatterID) |> fill(Lineup) |>
+    arrange(AtBatID_Runner, Base) |>
+    group_by(AtBatID_Runner) |>
+    fill(AtBatID_Runner) |> fill(Lineup) |>
     ungroup() |>
     # otherwise, must be after they batted
-    mutate(BatterID=if_else(is.na(BatterID), RunnerID, BatterID),
+    mutate(AtBatID=if_else(is.na(AtBatID), AtBatID_Runner, AtBatID),
            Lineup=if_else(is.na(Lineup), Runner, Lineup)) |>
     (\(x) { # ERROR CHECK: RunnerID > BatterID, or if = onPitch is not 0
-      tmp <- x |> filter(RunnerID > BatterID | (RunnerID == BatterID & onPitch <= 0))
+      tmp <- x |> filter(AtBatID_Runner > AtBatID | (AtBatID_Runner == AtBatID & onPitch <= 0))
       if(nrow(tmp)) {print(tmp); stop("became runner before batted!")}
       x
-    })()
+    })() |>
+    rename(AtBatPitches=onPitch)
 }
 
 make_plays <- function(g,
@@ -80,25 +81,35 @@ make_plays <- function(g,
     arrange(Inning, Side, Row) |>
     mutate(x=Lineup!=lag(Lineup, default=0), .by=c(Side, Inning)) |>
     mutate(BatterID=cumsum(x), .after=Lineup) |> select(-x) |>
+    ## add AtBatID
+    mutate(.p=is.na(lag(BatterID)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
+    mutate(AtBatID=cumsum(.x | .p), .after=BatterID) |> select(-.x, -.p) |>
+    ## get Pitches so far in at bat (onPitch)
+    mutate(AtBatPitches=cumsum(PitchesAtBat), .by=AtBatID) |>
     ## rename
-    rename(NumOut=Out, onPitch=PitchesAtBat) |>
+    rename(NumOut=Out, Pitches=PitchesAtBat) |>
     ## add Base
     left_join(key.Base, by="B1") |>
     mutate(
       Base=case_when(!is.na(Base) ~ Base, !is.na(B1) ~ 1L, TRUE ~0L),
       Base=if_else(Play %in% noPlay, NA, Base)) |>
     ## add Out
-    mutate(Out=(Base==0)*1L)
+    mutate(Out=(Base==0L)*1L)
 
   rx <- find_runners(px, pattern.out)
 
   bind_rows(rx, px) |>
     mutate(
       Runner=if_else(is.na(Runner), Lineup, Runner),
-      RunnerID=replace_na(RunnerID, 0)) |>
-    arrange(BatterID, onPitch, RunnerID) |>
-    select(Side, Row, Inning, BatterID, onPitch, Lineup, Pitcher,
-           Runner, RunnerID,
-           Balls, Strikes, Fouls,
-           Play, B1, How, Note, Base, Out)
+      AtBatID_Runner=replace_na(AtBatID_Runner, 0L)) |>
+    arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
+    select(Side, Row, Inning, AtBatID, AtBatPitches,
+           Pitcher, Pitches, Balls, Strikes, Fouls,
+           BatterID, Lineup, Play, B1,
+           AtBatID_Runner, Runner, How, Note,
+           Base, Out) |>
+    # now that they're in the right place, can put in the correct AtBatPitches
+    mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
+    fill(AtBatPitches) |>
+    mutate(AtBatPitches=if_else(AtBatPitches==1000L, 100L, AtBatPitches))
 }
