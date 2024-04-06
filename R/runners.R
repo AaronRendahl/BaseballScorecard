@@ -22,11 +22,11 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
            value=str_replace(value, "^([0-9])", "P\\1")) |>
     separate_wider_regex(value, c(How="[^0-9]*", Lineup="[0-9-.]+", Note=".*"), too_few="align_start") |>
     separate(Lineup, c("Lineup", "onPitch"), sep="[.-]", fill = "right") |>
-    mutate(Note=str_remove(Note, "^/")) |>
+    mutate(Note=str_remove(Note, "^/") |> na_if("")) |>
     mutate(Lineup=as.integer(Lineup)) |>
     mutate(onPitch=as.numeric(onPitch))
 
-  p1 <- px |> select(BatterID, Inning, Side, Lineup) |> unique()
+  p1 <- plays |> select(BatterID, Inning, Side, Lineup) |> unique()
   r1 <- rx |> filter(!is.na(Lineup)) |>
     select(idx, RunnerID, Inning, Side, Lineup) |>
     left_join(p1, by=c("Inning", "Side", "Lineup")) |>
@@ -93,7 +93,10 @@ make_plays <- function(g,
   rx <- find_runners(px, pattern.out)
 
   bind_rows(rx, px) |>
-    arrange(BatterID, onPitch) |>
+    mutate(
+      Runner=if_else(is.na(Runner), Lineup, Runner),
+      RunnerID=replace_na(RunnerID, 0)) |>
+    arrange(BatterID, onPitch, RunnerID) |>
     select(Side, Row, Inning, BatterID, onPitch, Lineup, Pitcher,
            Runner, RunnerID,
            Balls, Strikes, Fouls,
