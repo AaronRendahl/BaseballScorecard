@@ -1,5 +1,5 @@
 readgame <- function(file,
-                     rosters = tibble(Team=character(), Number=numeric()),
+                     rosters = tibble(Team=character(), Number=numeric(), Name=character()),
                      parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m"))) {
   message(file)
   ss <- readxl::excel_sheets(file)
