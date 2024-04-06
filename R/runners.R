@@ -31,8 +31,8 @@ find_runners <- function(plays, pattern.out="^X") {
     # need to get the first one that is at or after the runner
     mutate(ok = BatterID == min(BatterID[BatterID >= RunnerID]), .by="idx") |>
     (\(x) { # ERROR CHECK: each should have only one that is found
-      tmp <- x |> mutate(nok=sum(ok), .by=idx) |> filter(nok>1)
-      if(nrow(tmp)) {print(tmp); stop("> 1 batter found")}
+      tmp <- x |> mutate(nok=sum(ok), .by=idx) |> filter(nok!=1)
+      if(nrow(tmp)) {print(tmp); stop("exactly 1 batter not found")}
       x
     })() |>
     filter(is.na(ok) | ok) |>
