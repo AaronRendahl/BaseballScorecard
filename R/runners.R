@@ -19,6 +19,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # if how not specified, assume it was part of the play
     mutate(Out=str_detect(value, pattern.out)*1L,
            value=str_remove(value, pattern.out),
+           value=str_replace(value, "^$", "?"),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
     separate_wider_regex(value, c(How="[^0-9]*", Lineup="[0-9-.]+", Note=".*"), too_few="align_start") |>
     separate(Lineup, c("Lineup", "onPitch"), sep="[.-]", fill = "right") |>
