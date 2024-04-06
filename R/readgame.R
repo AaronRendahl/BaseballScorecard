@@ -1,4 +1,3 @@
-
 readgame <- function(file,
                      rosters = tibble(Team=character(), Number=numeric(), Name=character()),
                      parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m"))) {
@@ -30,50 +29,7 @@ readgame <- function(file,
   out
 }
 
-prep_game <- function(game) {
-  stopifnot(is_tibble(game) && nrow(game)==1)
-  game <- as.list(game)
-  game$teams <- game$game[[1]]$Team
-  game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
-  game$lineup <- game$game[[1]] |> select(Side, Lineup) |> unnest(Lineup)
-  game$game <- NULL
-  game
-}
 
-prep_game2 <- function(game) {
-  stopifnot(is_tibble(game) && nrow(game)==1)
-
-  g <- game$game[[1]]
-
-  lx <- local({
-    p1 <- g |> select(Side, Plays) |> unnest(Plays) |>
-      arrange(Side, Row) |> select(Side, Number=Pitcher) |> unique() |>
-      mutate(Order=1:n(), .by=Side) |> mutate(Side=3-Side)
-    g |> select(Side, Team, Lineup) |> unnest(Lineup) |>
-      full_join(p1, by=c("Side", "Number")) |>
-      mutate(Player=sprintf("%d%3d", Side, Number)) |>
-      arrange(Side, Lineup, Order)
-  })
-
-  px <- g |> select(Side, Plays) |> unnest(Plays) |>
-    arrange(Inning, Side, Row) |>
-    left_join(lx |> select(Side, Pitcher=Number, Pitcher_Code=Player) |> mutate(Side=3-Side),
-              by=c("Side", "Pitcher")) |>
-    left_join(lx |> select(Side, Lineup, Batter_Code=Player),
-              by=c("Side", "Lineup")) |>
-    select(-Pitcher, -Lineup) |>
-    rename(Pitcher=Pitcher_Code, Batter=Batter_Code) |>
-    select(Row, Inning, Side, Batter, Pitcher, everything())
-
-  lx <- lx |> select(Player, Team, Number, Name, Lineup, Order)
-
-  game <- as.list(game)
-  game$teams <- game$game[[1]]$Team
-  game$plays <- px
-  game$lineup <- lx
-  game$game <- NULL
-  game
-}
 
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
                       files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
@@ -95,7 +51,7 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
   gs <- gs |> filter(status %in% c("new", "update")) |> select(code, datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
     mutate(map_dfr(datafile, \(x) readgame(x, ...))) |>
-    game_add_stats() |>
+    #game_add_stats() |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
     arrange(code)
