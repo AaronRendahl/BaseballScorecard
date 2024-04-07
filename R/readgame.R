@@ -23,6 +23,7 @@ readgame <- function(file,
       select(Row, Inning, Lineup, Pitcher, everything())
   }))
   out <- tibble(when=when, about=about, game=list(game))
+  out$plays <- list(make_plays(out))
   out
 }
 
