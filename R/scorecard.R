@@ -25,6 +25,12 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   blank <- missing(game)
 
   if(!blank) {
+    stopifnot(is_tibble(game) && nrow(game)==1)
+    game <- as.list(game)
+    game$teams <- game$game[[1]]$Team
+    game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
+    game$lineup <- game$game[[1]] |> select(Side, Lineup) |> unnest(Lineup)
+    game$game <- NULL
     ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
     ## Pitches: total pitches during at-bat
     game$plays <- game$plays |>
