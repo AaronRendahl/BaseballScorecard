@@ -27,6 +27,5 @@ makedata <- function(d) {
     mutate(across(c("B2", "B3", "B4"), \(x) { x |> stringr::str_remove(pattern="\\.0$") })) |>
     mutate(ToBase = get_ToBase(B1, B2, B3, B4),
            PitchesAtBat = Balls + Strikes + Fouls + get_LastPitch(Play)) |>
-    mutate(Row = 1:n()) |>
-    select(Inning, Row, Lineup, everything())
+    mutate(Row = 1:n(), .before=1)
 }
