@@ -23,6 +23,15 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       panels = c(1.5, 1, 0.65), # bottom, left, top
                       n_players = 12, n_innings = c(7, 2), n_pitchers = 6) {
   blank <- missing(game)
+
+  if(!blank) {
+    ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
+    ## Pitches: total pitches during at-bat
+    game$plays <- game$plays |>
+      mutate(ToBase = get_ToBase(B1, B2, B3, B4),
+             Pitches = Balls + Strikes + Fouls + get_LastPitch(Play))
+  }
+
   pages <- match.arg(pages)
 
   if(length(n_players) == 1) n_players <- rep(n_players, 2)
