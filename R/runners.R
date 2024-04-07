@@ -86,9 +86,9 @@ make_plays <- function(g,
     mutate(.p=is.na(lag(BatterID)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
     mutate(AtBatID=cumsum(.x | .p), .after=BatterID) |> select(-.x, -.p) |>
     ## get Pitches so far in at bat (onPitch)
-    mutate(AtBatPitches=cumsum(PitchesAtBat), .by=AtBatID) |>
+    mutate(AtBatPitches=cumsum(Pitches), .by=AtBatID) |>
     ## rename
-    rename(NumOut=Out, Pitches=PitchesAtBat) |>
+    rename(NumOut=Out) |>
     ## add Base
     left_join(key.Base, by="B1") |>
     mutate(
