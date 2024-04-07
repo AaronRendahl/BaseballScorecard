@@ -15,17 +15,17 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # and now remove bases they didn't get to
     filter(!is.na(value) & value!=".") |>
     mutate(idx=1:n()) |>
-    # now can split the value into Out/How/Lineup/onPitch/Note
+    # now can split the value into Out/How/Lineup/AtBatPitches/Note
     # if how not specified, assume it was part of the play
     mutate(Out=str_detect(value, pattern.out)*1L,
            value=str_remove(value, pattern.out),
            value=str_replace(value, "^$", "?"),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
     separate_wider_regex(value, c(How="[^0-9]*", Lineup="[0-9-.]+", Note=".*"), too_few="align_start") |>
-    separate(Lineup, c("Lineup", "onPitch"), sep="[.-]", fill = "right") |>
+    separate(Lineup, c("Lineup", "AtBatPitches"), sep="[.-]", fill = "right") |>
     mutate(Note=str_remove(Note, "^/") |> na_if("")) |>
     mutate(Lineup=as.integer(Lineup)) |>
-    mutate(onPitch=as.numeric(onPitch))
+    mutate(AtBatPitches=as.numeric(AtBatPitches))
 
   p1 <- plays |> select(AtBatID, BatterID, Inning, Side, Lineup) |> unique()
   r1 <- rx |> filter(!is.na(Lineup)) |>
@@ -49,7 +49,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
   rx |> left_join(r1, by="idx") |>
     select(-idx) |>
     select(Inning, Side, AtBatID, AtBatID_Runner, Lineup, Runner, everything()) |>
-    mutate(onPitch=case_when(!is.na(onPitch) ~ onPitch,
+    mutate(AtBatPitches=case_when(!is.na(AtBatPitches) ~ AtBatPitches,
                              is.na(AtBatID) ~ 1000L,     # after this play, sometime...
                              How %in% after.play ~ 100L, # after this specific play
                              TRUE ~ 0L),                 # before this specific play
@@ -62,12 +62,11 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # otherwise, must be after they batted
     mutate(AtBatID=if_else(is.na(AtBatID), AtBatID_Runner, AtBatID),
            Lineup=if_else(is.na(Lineup), Runner, Lineup)) |>
-    (\(x) { # ERROR CHECK: RunnerID > BatterID, or if = onPitch is not 0
-      tmp <- x |> filter(AtBatID_Runner > AtBatID | (AtBatID_Runner == AtBatID & onPitch <= 0))
+    (\(x) { # ERROR CHECK: Runner > Batter, or if = AtBatPitches is not 0
+      tmp <- x |> filter(AtBatID_Runner > AtBatID | (AtBatID_Runner == AtBatID & AtBatPitches <= 0))
       if(nrow(tmp)) {print(tmp); stop("became runner before batted!")}
       x
-    })() |>
-    rename(AtBatPitches=onPitch)
+    })()
 }
 
 make_plays <- function(g,
@@ -85,7 +84,7 @@ make_plays <- function(g,
     ## add AtBatID
     mutate(.p=is.na(lag(BatterID)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
     mutate(AtBatID=cumsum(.x | .p), .after=BatterID) |> select(-.x, -.p) |>
-    ## get Pitches so far in at bat (onPitch)
+    ## get Pitches so far in at bat (AtBatPitches)
     mutate(AtBatPitches=cumsum(Pitches), .by=AtBatID) |>
     ## rename
     rename(NumOut=Out) |>
