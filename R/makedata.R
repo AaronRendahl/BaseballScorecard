@@ -20,12 +20,12 @@ get_LastPitch <- function(Play, NoPitch=key$Outcome[key$Pitch=="No Pitch"]) {
 makedata <- function(d) {
   ## now process as needed, adding variables
   ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
-  ## PitchesAtBat: total pitches during at-bat
+  ## Pitches: total pitches during at-bat
   d |>
     mutate(across(c("Balls", "Strikes", "Fouls"), \(x) replace_na(x, 0L))) |>
     ## .0$ is in case Google to xlsx adds a .0 to numbers
     mutate(across(c("B2", "B3", "B4"), \(x) { x |> stringr::str_remove(pattern="\\.0$") })) |>
     mutate(ToBase = get_ToBase(B1, B2, B3, B4),
-           PitchesAtBat = Balls + Strikes + Fouls + get_LastPitch(Play)) |>
+           Pitches = Balls + Strikes + Fouls + get_LastPitch(Play)) |>
     mutate(Row = 1:n(), .before=1)
 }

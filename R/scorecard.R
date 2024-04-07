@@ -2,7 +2,7 @@
 ## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
 ##
 ## ## computed when read in:
-## ToBase, PitchesAtBat
+## ToBase, Pitches
 ##
 ## ## computed in this file:
 ## X: if extra column needed for an inning
@@ -235,8 +235,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       pitch_count <- function(x) {
         x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
         bind_rows(
-          x |> group_by(Inning, Pitcher) |> summarize(N = sum(PitchesAtBat), .groups = "drop"),
-          x |> group_by(Pitcher) |> summarize(N = sum(PitchesAtBat), .groups = "drop") |> mutate(Inning = 0)
+          x |> group_by(Inning, Pitcher) |> summarize(N = sum(Pitches), .groups = "drop"),
+          x |> group_by(Pitcher) |> summarize(N = sum(Pitches), .groups = "drop") |> mutate(Inning = 0)
         ) |> mutate(Order = as.integer(Pitcher))
       }
       x1 <- pitch_count(game) |> mutate(N = as.character(N))
@@ -396,12 +396,12 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
           ungroup() |> pull(X)
       }
       d <- d |> mutate(X=get_X(Lineup, Inning)) |>
-        group_by(Pitcher, Inning) |> mutate(PitchesSoFar=cumsum(PitchesAtBat), LastPitch=1:n()==n()) |>
+        group_by(Pitcher, Inning) |> mutate(PitchesSoFar=cumsum(Pitches), LastPitch=1:n()==n()) |>
         group_by(Inning) |> mutate(top=(1:n()==1)) |>
         rowwise() |>
         mutate(box=list(
           makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
-                  pitchcount=c(PitchesAtBat, PitchesSoFar), LastPitch=LastPitch,
+                  pitchcount=c(Pitches, PitchesSoFar), LastPitch=LastPitch,
                   play=Play, bybase=c(B1, B2, B3, B4),
                   out=Out, basesize=basesize, top=top)
         )) |> ungroup()
