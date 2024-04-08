@@ -1,7 +1,7 @@
 # need to have added "Base" to plays to specify how many bases the batter initially made it to
 find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) {
   rx <- plays |> filter(!is.na(B1)) |>
-    select(AtBatID_Runner=AtBatID, Runner=Lineup, Pitcher, Row, Inning, Side, Base, B2, B3, B4) |>
+    select(AtBatID_Runner=AtBatID, Lineup_Runner=Lineup, Runner=Batter, Pitcher, Row, Inning, Side, Base, B2, B3, B4) |>
     # now pivot longer and remove any rows that they reached due to their at bat
     pivot_longer(c(B2, B3, B4), names_to="B") |>
     mutate(B=as.integer(str_sub(B, 2, 2))) |>
@@ -15,9 +15,9 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # and now remove bases they didn't get to
     filter(!is.na(value) & value!=".") |>
     mutate(idx=1:n()) |>
-    # now can split the value into Out/Advance/Lineup/AtBatPitches/Fielders
+    # now can split the value into isOut/Advance/Lineup/AtBatPitches/Fielders
     # if how not specified, assume it was part of the play
-    mutate(Out=str_detect(value, pattern.out)*1L,
+    mutate(isOut=str_detect(value, pattern.out)*1L,
            value=str_remove(value, pattern.out),
            value=str_replace(value, "^$", "?"),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
@@ -48,7 +48,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     select(idx, AtBatID)
   rx |> left_join(r1, by="idx") |>
     select(-idx) |>
-    select(Inning, Side, AtBatID, AtBatID_Runner, Lineup, Runner, everything()) |>
+    select(Inning, Side, AtBatID, AtBatID_Runner, Lineup, Lineup_Runner, everything()) |>
     mutate(AtBatPitches=case_when(!is.na(AtBatPitches) ~ AtBatPitches,
                              is.na(AtBatID) ~ 1000L,         # after this play, sometime...
                              Advance %in% after.play ~ 100L, # after this specific play
@@ -61,7 +61,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     ungroup() |>
     # otherwise, must be after they batted
     mutate(AtBatID=if_else(is.na(AtBatID), AtBatID_Runner, AtBatID),
-           Lineup=if_else(is.na(Lineup), Runner, Lineup)) |>
+           Lineup=if_else(is.na(Lineup), Lineup_Runner, Lineup)) |>
     (\(x) { # ERROR CHECK: Runner > Batter, or if = AtBatPitches is not 0
       tmp <- x |> filter(AtBatID_Runner > AtBatID | (AtBatID_Runner == AtBatID & AtBatPitches <= 0))
       if(nrow(tmp)) {print(tmp); stop("became runner before batted!")}
@@ -100,19 +100,24 @@ make_plays <- function(g, p,
   rx <- find_runners(px, pattern.out)
 
   bind_rows(rx, px) |>
+    # if no runner, set the runner to the batter and the AtBatID to 0
     mutate(
-      Runner=if_else(is.na(Runner), Lineup, Runner),
+      Runner=if_else(is.na(Runner), Batter, Runner),
+      Lineup_Runner=if_else(is.na(Lineup_Runner), Lineup, Lineup_Runner),
       AtBatID_Runner=replace_na(AtBatID_Runner, 0L)) |>
+    # fill in the Batter variable, need to be careful in case an at bat had more than one batter
     arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
-    select(AtBatID, AtBatPitches, Side, Row, Inning, Lineup,
-           Batter, Pitcher, AtBatID_Runner, Runner,
-           Pitches, Balls, Strikes, Fouls,
-           Play, B1, Advance,
-           Base, isOut, Fielders) |>
+    group_by(AtBatID) |> fill(Batter, .direction="downup") |> ungroup() |>
     # now that they're in the right place, can put in the correct AtBatPitches
     mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
     fill(AtBatPitches) |>
-    mutate(AtBatPitches=if_else(AtBatPitches==1000L, 100L, AtBatPitches))
+    mutate(AtBatPitches=if_else(AtBatPitches==1000L, 100L, AtBatPitches)) |>
+    # final selection of variables
+    select(AtBatID, AtBatPitches, Side, Row, Inning, Lineup,
+           Batter, Pitcher, Runner, AtBatID_Runner, Lineup_Runner,
+           Pitches, Balls, Strikes, Fouls,
+           Play, B1, Advance,
+           Base, isOut, Fielders)
 }
 
 add_plays <- function(gs, ...) {
