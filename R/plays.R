@@ -84,8 +84,8 @@ make_plays <- function(g,
     mutate(x=Lineup!=lag(Lineup, default=0), .by=c(Side, Inning)) |>
     mutate(BatterID=cumsum(x), .after=Lineup) |> select(-x) |>
     ## add AtBatID
-    mutate(.p=is.na(lag(BatterID)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
-    mutate(AtBatID=cumsum(.x | .p), .after=BatterID) |> select(-.x, -.p) |>
+    mutate(.p=is.na(lag(Row)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
+    mutate(AtBatID=cumsum(.x | .p), .after=Row) |> select(-.x, -.p) |>
     ## get Pitches so far in at bat (AtBatPitches)
     mutate(AtBatPitches=cumsum(Pitches), .by=AtBatID) |>
     ## add Base
