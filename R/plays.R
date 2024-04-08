@@ -57,7 +57,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # if know when made it to a previous base, then everything after that must be after that
     arrange(AtBatID_Runner, Base) |>
     group_by(AtBatID_Runner) |>
-    fill(AtBatID_Runner) |> fill(Lineup) |>
+    fill(AtBatID_Runner) |> fill(Lineup) |> fill(AtBatID) |>
     ungroup() |>
     # otherwise, must be after they batted
     mutate(AtBatID=if_else(is.na(AtBatID), AtBatID_Runner, AtBatID),
