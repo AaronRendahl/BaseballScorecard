@@ -94,7 +94,7 @@ make_plays <- function(g, p,
       Base=if_else(Play %in% noPlay, NA, Base)) |>
     ## add isOut
     mutate(isOut=(Base==0L)*1L) |>
-    separate_wider_regex(Play, c(Play="[A-Za-z]*", Fielders=".*")) |>
+    separate_wider_regex(Play, c(Play="[A-Za-z_]*", Fielders=".*")) |>
     mutate(Fielders=na_if(Fielders, ""))
 
   rx <- find_runners(px, pattern.out)
