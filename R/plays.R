@@ -88,15 +88,13 @@ make_plays <- function(g,
     mutate(AtBatID=cumsum(.x | .p), .after=BatterID) |> select(-.x, -.p) |>
     ## get Pitches so far in at bat (AtBatPitches)
     mutate(AtBatPitches=cumsum(Pitches), .by=AtBatID) |>
-    ## rename
-    rename(NumOut=Out) |>
     ## add Base
     left_join(key.Base, by="B1") |>
     mutate(
       Base=case_when(!is.na(Base) ~ Base, !is.na(B1) ~ 1L, TRUE ~0L),
       Base=if_else(Play %in% noPlay, NA, Base)) |>
-    ## add Out
-    mutate(Out=(Base==0L)*1L)
+    ## add isOut
+    mutate(isOut=(Base==0L)*1L)
 
   rx <- find_runners(px, pattern.out)
 
@@ -109,7 +107,7 @@ make_plays <- function(g,
            Pitcher, Pitches, Balls, Strikes, Fouls,
            BatterID, Lineup, Play, B1,
            AtBatID_Runner, Runner, How, Note,
-           Base, Out) |>
+           Base, isOut) |>
     # now that they're in the right place, can put in the correct AtBatPitches
     mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
     fill(AtBatPitches) |>
