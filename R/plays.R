@@ -27,7 +27,7 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     mutate(Lineup=as.integer(Lineup)) |>
     mutate(AtBatPitches=as.numeric(AtBatPitches))
 
-  p1 <- plays |> select(AtBatID, BatterID, Inning, Side, Lineup) |> unique()
+  p1 <- plays |> select(AtBatID, Inning, Side, Lineup) |> unique()
   r1 <- rx |> filter(!is.na(Lineup)) |>
     select(idx, AtBatID_Runner, Inning, Side, Lineup) |>
     left_join(p1, by=c("Inning", "Side", "Lineup")) |>
@@ -79,10 +79,6 @@ make_plays <- function(g,
 
   px <- p2 |>
     Pitches_fun() |>
-    ## add BatterID
-    arrange(Inning, Side, Row) |>
-    mutate(x=Lineup!=lag(Lineup, default=0), .by=c(Side, Inning)) |>
-    mutate(BatterID=cumsum(x), .after=Lineup) |> select(-x) |>
     ## add AtBatID
     mutate(.p=is.na(lag(Row)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
     mutate(AtBatID=cumsum(.x | .p), .after=Row) |> select(-.x, -.p) |>
@@ -106,7 +102,7 @@ make_plays <- function(g,
       AtBatID_Runner=replace_na(AtBatID_Runner, 0L)) |>
     arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
     select(Side, Row, Inning, AtBatID, AtBatPitches,
-           Pitcher, BatterID, Lineup, AtBatID_Runner, Runner,
+           Pitcher, Lineup, AtBatID_Runner, Runner,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance,
            Base, isOut, Fielders) |>
