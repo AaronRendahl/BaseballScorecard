@@ -15,15 +15,15 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # and now remove bases they didn't get to
     filter(!is.na(value) & value!=".") |>
     mutate(idx=1:n()) |>
-    # now can split the value into Out/Advance/Lineup/AtBatPitches/Note
+    # now can split the value into Out/Advance/Lineup/AtBatPitches/AdvanceNote
     # if how not specified, assume it was part of the play
     mutate(Out=str_detect(value, pattern.out)*1L,
            value=str_remove(value, pattern.out),
            value=str_replace(value, "^$", "?"),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
-    separate_wider_regex(value, c(Advance="[^0-9]*", Lineup="[0-9-.]+", Note=".*"), too_few="align_start") |>
+    separate_wider_regex(value, c(Advance="[^0-9]*", Lineup="[0-9-.]+", AdvanceNote=".*"), too_few="align_start") |>
     separate(Lineup, c("Lineup", "AtBatPitches"), sep="[.-]", fill = "right") |>
-    mutate(Note=str_remove(Note, "^/") |> na_if("")) |>
+    mutate(AdvanceNote=str_remove(AdvanceNote, "^/") |> na_if("")) |>
     mutate(Lineup=as.integer(Lineup)) |>
     mutate(AtBatPitches=as.numeric(AtBatPitches))
 
@@ -106,7 +106,7 @@ make_plays <- function(g,
     select(Side, Row, Inning, AtBatID, AtBatPitches,
            Pitcher, Pitches, Balls, Strikes, Fouls,
            BatterID, Lineup, Play, B1,
-           AtBatID_Runner, Runner, Advance, Note,
+           AtBatID_Runner, Runner, Advance, AdvanceNote,
            Base, isOut) |>
     # now that they're in the right place, can put in the correct AtBatPitches
     mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
