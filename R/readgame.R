@@ -1,13 +1,7 @@
-cleanplays <- function(d) {
-  d |>
-    mutate(across(c("Balls", "Strikes", "Fouls"), \(x) replace_na(x, 0L))) |>
-    ## .0$ is in case Google to xlsx adds a .0 to numbers
-    mutate(across(c("B2", "B3", "B4"), \(x) { x |> stringr::str_remove(pattern="\\.0$") }))
-}
-
 readgame <- function(file,
                      rosters = tibble(Team=character(), Number=numeric(), Name=character()),
                      parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m")),
+                     cleanplays_fun=cleanplays,
                      plays=TRUE) {
   message(file)
   ss <- readxl::excel_sheets(file)
@@ -28,7 +22,7 @@ readgame <- function(file,
     select(Side, Team, Lineup)
   game <- lineups |> mutate(Plays = map(Team, \(team) {
     readxl::read_excel(file, sheet = team) |>
-      cleanplays() |>
+      cleanplays_fun() |>
       mutate(Row = 1:n(), .before=1)
   }))
   out <- tibble(when=when, about=about, game=list(game))

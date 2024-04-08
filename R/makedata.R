@@ -22,4 +22,9 @@ add_Pitches <- function(x, NoPitch=key$Outcome[key$Pitch=="No Pitch"]) {
   x |> mutate(Pitches=Balls + Strikes + Fouls + !(Play %in% NoPitch))
 }
 
-
+cleanplays <- function(d) {
+  d |>
+    mutate(across(c("Balls", "Strikes", "Fouls"), \(x) replace_na(x, 0L))) |>
+    ## .0$ is in case Google to xlsx adds a .0 to numbers
+    mutate(across(c("B2", "B3", "B4"), \(x) { x |> stringr::str_remove(pattern="\\.0$") }))
+}
