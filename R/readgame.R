@@ -2,7 +2,7 @@ readgame <- function(file,
                      rosters = tibble(Team=character(), Number=numeric(), Name=character()),
                      parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m")),
                      cleanplays_fun=cleanplays,
-                     plays=TRUE) {
+                     plays=TRUE, ...) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, col_types="text", .name_repair="minimal")
@@ -38,7 +38,7 @@ readgame <- function(file,
   }
   out <- tibble(when=when, about=about, game=list(game))
   if(plays) {
-    out <- out |> add_plays()
+    out <- out |> \(x) add_plays(x, ...)
   }
   out
 }
