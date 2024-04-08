@@ -61,6 +61,7 @@ calc_stats <- function(data, calculations, columns) {
   data[c(intersect(keep, names(data)), columns)]
 }
 
+## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
 counting_stats <- function(d) {
   d |> mutate(Outcome=get_Outcome(Play, B1),
               OutDuring=get_OutDuring(B2, B3, B4),
