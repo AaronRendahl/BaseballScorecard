@@ -50,9 +50,9 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     select(-idx) |>
     select(Inning, Side, AtBatID, AtBatID_Runner, Lineup, Runner, everything()) |>
     mutate(AtBatPitches=case_when(!is.na(AtBatPitches) ~ AtBatPitches,
-                             is.na(AtBatID) ~ 1000L,     # after this play, sometime...
+                             is.na(AtBatID) ~ 1000L,         # after this play, sometime...
                              Advance %in% after.play ~ 100L, # after this specific play
-                             TRUE ~ 0L),                 # before this specific play
+                             TRUE ~ 0L),                     # before this specific play
            .after=AtBatID) |>
     # if know when made it to a previous base, then everything after that must be after that
     arrange(AtBatID_Runner, Base) |>
