@@ -1,18 +1,13 @@
 ## ## variables needed from Game file:
 ## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
 ##
-## ## computed when read in:
+## ## also provide functions that add these
 ## ToBase, Pitches
 ##
 ## ## computed in this file:
 ## X: if extra column needed for an inning
 ## PitchesSoFar: pitches so far by this pitcher
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
-
-when_format <- function(x) {
-  paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
-         format(x, "%I:%M%P") |> str_remove("^0") |> str_remove("m$"))
-}
 
 scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),
@@ -21,7 +16,11 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       page_size = c(8.5, 11),
                       margins = c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
                       panels = c(1.5, 1, 0.65), # bottom, left, top
-                      n_players = 12, n_innings = c(7, 2), n_pitchers = 6) {
+                      n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
+                      when_format=MDY_format,
+                      toBase_fun=add_ToBase,
+                      Pitches_fun=add_Pitches
+                      ) {
   blank <- missing(game)
 
   if(!blank) {
@@ -33,9 +32,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     game$game <- NULL
     ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
     ## Pitches: total pitches during at-bat
-    game$plays <- game$plays |>
-      mutate(ToBase = get_ToBase(B1, B2, B3, B4),
-             Pitches = Balls + Strikes + Fouls + get_LastPitch(Play))
+    game$plays <- game$plays |> toBase_fun() |> Pitches_fun()
   }
 
   pages <- match.arg(pages)

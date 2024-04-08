@@ -1,5 +1,10 @@
 ## helper functions
-get_ToBase <- function(B1, B2, B3, B4, pattern.out="^X") {
+MDY_format <- function(x) {
+  paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
+         format(x, "%I:%M%P") |> str_remove("^0") |> str_remove("m$"))
+}
+
+add_ToBase <- function(x, pattern.out="^X") {
   ## this needs to be a vectorized function,
   ## so here's a function that can handle one at bat
   f1 <- function(B1, B2, B3, B4) {
@@ -10,11 +15,11 @@ get_ToBase <- function(B1, B2, B3, B4, pattern.out="^X") {
     max(toX, to1) + stringr::str_detect(B[to1+1], pattern.out)*(-0.5)
   }
   ## and then we'll map across it to vectorize it
-  purrr::pmap_dbl(list(B1, B2, B3, B4), f1)
+  x |> mutate(ToBase=purrr::pmap_dbl(list(B1, B2, B3, B4), f1))
 }
 
-get_LastPitch <- function(Play, NoPitch=key$Outcome[key$Pitch=="No Pitch"]) {
-  !(Play %in% NoPitch)
+add_Pitches <- function(x, NoPitch=key$Outcome[key$Pitch=="No Pitch"]) {
+  x |> mutate(Pitches=Balls + Strikes + Fouls + !(Play %in% NoPitch))
 }
 
 
