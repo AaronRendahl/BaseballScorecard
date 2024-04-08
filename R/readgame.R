@@ -25,6 +25,17 @@ readgame <- function(file,
       cleanplays_fun() |>
       mutate(Row = 1:n(), .before=1)
   }))
+  ## add Batter from the Lineup, if needed
+  if(! "Batter" %in% names(game$Plays[[1]])) {
+    game$Plays[[1]] <- game$Plays[[1]] |>
+      left_join(game$Lineup[[1]] |> select(Lineup, Batter=Number), by="Lineup") |>
+      relocate(Batter, .before="Pitcher")
+  }
+  if(! "Batter" %in% names(game$Plays[[2]])) {
+    game$Plays[[2]] <- game$Plays[[2]] |>
+      left_join(game$Lineup[[2]] |> select(Lineup, Batter=Number), by="Lineup") |>
+      relocate(Batter, .before="Pitcher")
+  }
   out <- tibble(when=when, about=about, game=list(game))
   if(plays) {
     out <- out |> add_plays()

@@ -80,7 +80,8 @@ make_plays <- function(g,
   px <- p2 |>
     Pitches_fun() |>
     ## add AtBatID
-    mutate(.p=is.na(lag(Row)), .x=!(lag(Play) %in% noPlay), .by=c(Side, Inning)) |>
+    arrange(Inning, Side, Row) |>
+    mutate(.p=is.na(lag(Row)), .x=!(lag(Play) %in% noPlay), .by=c(Inning, Side)) |>
     mutate(AtBatID=cumsum(.x | .p), .after=Row) |> select(-.x, -.p) |>
     ## get Pitches so far in at bat (AtBatPitches)
     mutate(AtBatPitches=cumsum(Pitches), .by=AtBatID) |>
@@ -101,8 +102,8 @@ make_plays <- function(g,
       Runner=if_else(is.na(Runner), Lineup, Runner),
       AtBatID_Runner=replace_na(AtBatID_Runner, 0L)) |>
     arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
-    select(Side, Row, Inning, AtBatID, AtBatPitches,
-           Pitcher, Lineup, AtBatID_Runner, Runner,
+    select(AtBatID, AtBatPitches, Side, Row, Inning, Lineup,
+           Batter, Pitcher, AtBatID_Runner, Runner,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance,
            Base, isOut, Fielders) |>
