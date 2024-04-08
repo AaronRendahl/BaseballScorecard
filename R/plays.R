@@ -69,15 +69,17 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     })()
 }
 
-make_plays <- function(g,
+make_plays <- function(g, p,
                        pattern.out="^X",
                        noPlay = "_",
                        key.Base = key |> filter(Base>1) |> select(B1=Outcome, Base),
                        Pitches_fun=add_Pitches) {
-  stopifnot(is_tibble(g) & nrow(g)==1)
-  p2 <- g$game[[1]] |> select(Side, Plays) |> unnest(Plays)
+  if(missing(p)) {
+    stopifnot(is_tibble(g) & nrow(g)==1)
+    p <- g$game[[1]] |> select(Side, Plays) |> unnest(Plays)
+  }
 
-  px <- p2 |>
+  px <- p |>
     Pitches_fun() |>
     ## add AtBatID
     arrange(Inning, Side, Row) |>
