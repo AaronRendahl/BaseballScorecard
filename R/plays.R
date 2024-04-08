@@ -15,15 +15,15 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     # and now remove bases they didn't get to
     filter(!is.na(value) & value!=".") |>
     mutate(idx=1:n()) |>
-    # now can split the value into Out/Advance/Lineup/AtBatPitches/AdvanceNote
+    # now can split the value into Out/Advance/Lineup/AtBatPitches/Fielders
     # if how not specified, assume it was part of the play
     mutate(Out=str_detect(value, pattern.out)*1L,
            value=str_remove(value, pattern.out),
            value=str_replace(value, "^$", "?"),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
-    separate_wider_regex(value, c(Advance="[^0-9]*", Lineup="[0-9-.]+", AdvanceNote=".*"), too_few="align_start") |>
+    separate_wider_regex(value, c(Advance="[^0-9]*", Lineup="[0-9-.]+", Fielders=".*"), too_few="align_start") |>
     separate(Lineup, c("Lineup", "AtBatPitches"), sep="[.-]", fill = "right") |>
-    mutate(AdvanceNote=str_remove(AdvanceNote, "^/") |> na_if("")) |>
+    mutate(Fielders=str_remove(Fielders, "^/") |> na_if("")) |>
     mutate(Lineup=as.integer(Lineup)) |>
     mutate(AtBatPitches=as.numeric(AtBatPitches))
 
@@ -94,7 +94,9 @@ make_plays <- function(g,
       Base=case_when(!is.na(Base) ~ Base, !is.na(B1) ~ 1L, TRUE ~0L),
       Base=if_else(Play %in% noPlay, NA, Base)) |>
     ## add isOut
-    mutate(isOut=(Base==0L)*1L)
+    mutate(isOut=(Base==0L)*1L) |>
+    separate_wider_regex(Play, c(Play="[A-Za-z]*", Fielders=".*")) |>
+    mutate(Fielders=na_if(Fielders, ""))
 
   rx <- find_runners(px, pattern.out)
 
@@ -104,10 +106,10 @@ make_plays <- function(g,
       AtBatID_Runner=replace_na(AtBatID_Runner, 0L)) |>
     arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
     select(Side, Row, Inning, AtBatID, AtBatPitches,
-           Pitcher, Pitches, Balls, Strikes, Fouls,
-           BatterID, Lineup, Play, B1,
-           AtBatID_Runner, Runner, Advance, AdvanceNote,
-           Base, isOut) |>
+           Pitcher, BatterID, Lineup, AtBatID_Runner, Runner,
+           Pitches, Balls, Strikes, Fouls,
+           Play, B1, Advance,
+           Base, isOut, Fielders) |>
     # now that they're in the right place, can put in the correct AtBatPitches
     mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
     fill(AtBatPitches) |>
