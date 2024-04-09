@@ -38,7 +38,7 @@ readgame <- function(file,
   }
   out <- tibble(when=when, about=about, game=list(game))
   if(plays) {
-    out <- out |> \(x) add_plays(x, ...)
+    out <- add_plays(out, ...)
   }
   out
 }
