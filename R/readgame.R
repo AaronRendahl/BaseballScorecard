@@ -29,12 +29,12 @@ readgame <- function(file,
   if(! "Batter" %in% names(game$Plays[[1]])) {
     game$Plays[[1]] <- game$Plays[[1]] |>
       left_join(game$Lineup[[1]] |> select(Lineup, Batter=Number), by="Lineup") |>
-      relocate(Batter, .before="Pitcher")
+      relocate(Batter, .after="Inning")
   }
   if(! "Batter" %in% names(game$Plays[[2]])) {
     game$Plays[[2]] <- game$Plays[[2]] |>
       left_join(game$Lineup[[2]] |> select(Lineup, Batter=Number), by="Lineup") |>
-      relocate(Batter, .before="Pitcher")
+      relocate(Batter, .after="Inning")
   }
   out <- tibble(when=when, about=about, game=list(game))
   if(plays) {
