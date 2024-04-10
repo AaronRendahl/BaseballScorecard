@@ -62,7 +62,49 @@ calc_stats <- function(data, calculations, columns) {
 }
 
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
-counting_stats <- function(d) {
+counting_stats <- function(d, key=readxl::read_excel("codes.xlsx", "key", skip=1)) {
+
+  d <- d |> mutate(idx=1:n(), .before=1)
+
+  key <- key |> select(-Description)
+  key0 <- key |> select(Type, Code, Variable) |> filter(!is.na(Variable)) |>
+    mutate(value=1L) |> pivot_wider(names_from=Variable, values_from=value)
+  key1 <- key |> select(-Variable, -ends_with("_")) |>
+    full_join(key0, by=c("Type", "Code"))
+  key2 <- key |> select(Type, Code, ends_with("_")) |>
+    rename_with(\(x) str_remove(x, "_$")) |>
+    filter(Type %in% c("Play", "B1")) |>
+    mutate(Type="B1Play")
+
+  keys <- bind_rows(key1 |> nest(.by=Type),
+                    key2 |> nest(.by=Type)) |>
+    mutate(data=map(data, \(x) {x[colSums(!is.na(x))>0]})) |>
+    mutate(data=map2(Type, data, \(n, x) {names(x)[1] <- n; x}))
+
+  ## check that all codes are found in the key
+  setdiff(c(d$Play, d$B1, d$Advance), c(NA, key$Code))
+
+  ## check that B1/Play/B1Play don't have overlapping names
+  keys |> filter(!Type %in% c("Advance")) |>
+    mutate(A=map(data, \(x) tibble(var=names(x)[-1]))) |>
+    select(Type, A) |> unnest(A) |>
+    count(var) |> filter(n>1)
+
+  keylist <- setNames(keys$data, keys$Type)
+
+  da <- d |> filter(!is.na(Advance)) |>
+    left_join(keylist$Advance, by="Advance")
+  dp <- d |> filter(is.na(Advance)) |>
+    mutate(B1Play=if_else(is.na(B1), Play, B1)) |>
+    left_join(keylist$B1Play, by="B1Play") |>
+    left_join(keylist$B1, by="B1") |>
+    left_join(keylist$Play, by="Play") |>
+    select(-B1Play)
+  bind_rows(da, dp) |> arrange(idx)
+}
+
+old_counting_stats <- function(d) {
+
   d |> mutate(Outcome=get_Outcome(Play, B1),
               OutDuring=get_OutDuring(B2, B3, B4),
               RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring),
@@ -74,14 +116,14 @@ counting_stats <- function(d) {
             Outs    = Out + RunnersOut,
             S  = Strikes + Fouls,
             P  = Balls + Strikes + Fouls,
+
             H  = Hit,
             AB = !is.na(Hit),
             PA  = Outcome != "_",
-            BF  = Outcome != "_",
             K   = Outcome %in% c("K", "Kd"),
+
             BB  = Outcome == "BB",
             HB  = Outcome == "HB",
-            HBP = Outcome == "HB",
             ROE = Outcome %in% c("E", "Kd"),
            `1B` = Outcome == "1B",
            `2B` = Outcome == "2B",
