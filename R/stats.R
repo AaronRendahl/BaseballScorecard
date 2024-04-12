@@ -16,7 +16,7 @@ getIP <- function(x) {
 batter_calculations <- list("BA" = "getBA(H, AB)",
                             "K/PA" = "K / PA",
                             "OBPE" = "(H + BB + HBP + ROE) / PA",
-                            "SLG" = "(`1B` + 2*`2B` + 3*`3B` + 4*`HR`) / AB",
+                            "SLG" = "TB / AB",
                             "SLG + OBPE + notK/PA:\nBatting Sum" = "SLG + OBPE + (1 - `K/PA`)",
                             K.="K", BBHB="BB+HBP", BIP="PA - K - BBHB", H.="H",
                             "Blank" = NA) |>
@@ -62,45 +62,55 @@ calc_stats <- function(data, calculations, columns) {
 }
 
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
-counting_stats <- function(d, key=readxl::read_excel("codes.xlsx", "key", skip=1)) {
+counting_stats <- function(d, key=BaseballScorecard::codes) {
 
-  d <- d |> mutate(idx=1:n(), .before=1)
+  #codes <- readxl::read_excel("inst/extdata/codes.xlsx", "codes")
+  #save(codes, file="data/codes.rda")
+  #usethis::use_data(codes, overwrite=TRUE)
+
+  d <- d |> mutate(.idx=1:n())
 
   key <- key |> select(-Description)
-  key0 <- key |> select(Type, Code, Variable) |> filter(!is.na(Variable)) |>
-    mutate(value=1L) |> pivot_wider(names_from=Variable, values_from=value)
-  key1 <- key |> select(-Variable, -ends_with("_")) |>
-    full_join(key0, by=c("Type", "Code"))
-  key2 <- key |> select(Type, Code, ends_with("_")) |>
-    rename_with(\(x) str_remove(x, "_$")) |>
-    filter(Type %in% c("Play", "B1")) |>
-    mutate(Type="B1Play")
+  key.num <- key |> select(Type, Code, where(is.numeric))
+  key.chr <- key |> select(Type, Code, !where(is.numeric)) |>
+    pivot_longer(c(-Type, -Code), values_drop_na = TRUE) |>
+    select(-name) |> mutate(X=1L) |>
+    pivot_wider(names_from=value, values_from=X)
+  key2 <- full_join(key.num, key.chr, by=c("Type", "Code")) |>
+    mutate(across(c(-Code), \(x) {
+      if(all(is.na(x))) x
+      else replace_na(x, 0)
+    }), .by=Type)
 
-  keys <- bind_rows(key1 |> nest(.by=Type),
-                    key2 |> nest(.by=Type)) |>
-    mutate(data=map(data, \(x) {x[colSums(!is.na(x))>0]})) |>
-    mutate(data=map2(Type, data, \(n, x) {names(x)[1] <- n; x}))
+  ## can't reuse names from the original counting data
+  stopifnot(!any(names(key2) %in% names(d)))
+  nn <- setdiff(names(key2), c("Type", "Code"))
 
   ## check that all codes are found in the key
   setdiff(c(d$Play, d$B1, d$Advance), c(NA, key$Code))
 
-  ## check that B1/Play/B1Play don't have overlapping names
-  keys |> filter(!Type %in% c("Advance")) |>
-    mutate(A=map(data, \(x) tibble(var=names(x)[-1]))) |>
-    select(Type, A) |> unnest(A) |>
-    count(var) |> filter(n>1)
-
-  keylist <- setNames(keys$data, keys$Type)
-
-  da <- d |> filter(!is.na(Advance)) |>
-    left_join(keylist$Advance, by="Advance")
-  dp <- d |> filter(is.na(Advance)) |>
-    mutate(B1Play=if_else(is.na(B1), Play, B1)) |>
-    left_join(keylist$B1Play, by="B1Play") |>
-    left_join(keylist$B1, by="B1") |>
-    left_join(keylist$Play, by="Play") |>
-    select(-B1Play)
-  bind_rows(da, dp) |> arrange(idx)
+  dx <- d |> select(.idx, Play, B1, Advance) |>
+    pivot_longer(c(Play, B1, Advance), values_drop_na = TRUE,
+                 names_to="Type", values_to="Code") |>
+    left_join(key2, by=c("Type", "Code")) |> select(-Type, -Code) |>
+    summarize(across(everything(), \(x) {
+      if(length(x)>1) {
+        if(all(is.na(x))) {
+          x <- NA
+        } else {
+          x <- x[!is.na(x)]
+          if(length(x)>1) {
+            x <- unique(x)
+            if(length(x)>1) {
+              stop("discrepancy!")
+            }
+          }
+        }
+      }
+      x
+    }), .by=c(.idx)) |>
+    mutate(across(everything(), \(x) replace_na(x, 0)))
+  d |> left_join(dx, by=".idx")
 }
 
 old_counting_stats <- function(d) {
