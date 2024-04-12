@@ -87,7 +87,10 @@ counting_stats <- function(d, key=BaseballScorecard::codes) {
   nn <- setdiff(names(key2), c("Type", "Code"))
 
   ## check that all codes are found in the key
-  setdiff(c(d$Play, d$B1, d$Advance), c(NA, key$Code))
+  mis <- setdiff(c(d$Play, d$B1, d$Advance), c(NA, key$Code))
+  if(length(mis)>0) {
+    stop(mis, " not found!")
+  }
 
   dx <- d |> select(.idx, Play, B1, Advance) |>
     pivot_longer(c(Play, B1, Advance), values_drop_na = TRUE,
