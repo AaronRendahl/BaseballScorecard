@@ -104,7 +104,7 @@ make_plays <- function(g, p,
     mutate(
       Runner=if_else(is.na(Runner), Batter, Runner),
       Lineup_Runner=if_else(is.na(Lineup_Runner), Lineup, Lineup_Runner),
-      AtBatID_Runner=replace_na(AtBatID_Runner, 0L)) |>
+      AtBatID_Runner=if_else(is.na(AtBatID_Runner), AtBatID, AtBatID_Runner)) |>
     # fill in the Batter variable, need to be careful in case an at bat had more than one batter
     arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
     group_by(AtBatID) |> fill(Batter, .direction="downup") |> ungroup() |>
@@ -112,12 +112,17 @@ make_plays <- function(g, p,
     mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
     fill(AtBatPitches) |>
     mutate(AtBatPitches=if_else(AtBatPitches==1000L, 100L, AtBatPitches)) |>
+    # need to change isOut to NA if not their last stop
+    mutate(lastbase=Base==max(Base, na.rm=TRUE), .by=AtBatID_Runner) |>
+    mutate(isOut=if_else(!lastbase, NA, isOut),
+           R = (Base==4 & !isOut) * 1L,
+           LOB = (Base!=4 & !isOut) * 1L) |>
     # final selection of variables
     select(AtBatID, AtBatPitches, Side, Row, Inning, Lineup,
            Batter, Pitcher, Runner, AtBatID_Runner, Lineup_Runner,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance,
-           Base, isOut, Fielders)
+           Base, isOut, R, LOB, Fielders)
 }
 
 add_plays <- function(gs, ...) {
