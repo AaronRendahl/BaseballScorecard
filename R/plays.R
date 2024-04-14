@@ -113,7 +113,7 @@ make_plays <- function(g, p,
     fill(AtBatPitches) |>
     mutate(AtBatPitches=if_else(AtBatPitches==1000L, 100L, AtBatPitches)) |>
     # need to change isOut to NA if not their last stop
-    mutate(lastbase=Base==max(Base, na.rm=TRUE), .by=AtBatID_Runner) |>
+    mutate(lastbase=Base==max(-1, Base, na.rm=TRUE), .by=AtBatID_Runner) |>
     mutate(isOut=if_else(!lastbase, NA, isOut),
            R = (Base==4 & !isOut) * 1L,
            LOB = (Base!=4 & !isOut) * 1L) |>
