@@ -116,35 +116,6 @@ counting_stats <- function(d, key=BaseballScorecard::codes) {
   d |> left_join(dx, by=".idx")
 }
 
-old_counting_stats <- function(d) {
-
-  d |> mutate(Outcome=get_Outcome(Play, B1),
-              OutDuring=get_OutDuring(B2, B3, B4),
-              RunnersOut=get_RunnersOut(Lineup, Inning, OutDuring),
-              Contact=get_Contact(Play, B1)) |>
-    select(-Out) |>
-    left_join(key, by="Outcome") |>
-    mutate( Strikes = Strikes + (Pitch == "Strike"),
-            Balls   = Balls + (Pitch == "Ball"),
-            Outs    = Out + RunnersOut,
-            S  = Strikes + Fouls,
-            P  = Balls + Strikes + Fouls,
-
-            H  = Hit,
-            AB = !is.na(Hit),
-            PA  = Outcome != "_",
-            K   = Outcome %in% c("K", "Kd"),
-
-            BB  = Outcome == "BB",
-            HB  = Outcome == "HB",
-            ROE = Outcome %in% c("E", "Kd"),
-           `1B` = Outcome == "1B",
-           `2B` = Outcome == "2B",
-           `3B` = Outcome == "3B",
-            HR  = Outcome == "HR",
-            R   = ToBase == 4)
-}
-
 ## BATTER STATS
 batter_counting_stats <- function(d) {
   d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
