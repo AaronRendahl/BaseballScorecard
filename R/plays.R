@@ -50,8 +50,8 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     select(-idx) |>
     select(Inning, Side, AtBatID, AtBatID_Runner, Lineup, Lineup_Runner, everything()) |>
     mutate(AtBatPitches=case_when(!is.na(AtBatPitches) ~ AtBatPitches,
-                             is.na(AtBatID) ~ 1000L,         # after this play, sometime...
-                             Advance %in% after.play ~ 100L, # after this specific play
+                             is.na(AtBatID) ~ 100L,         # after this play, sometime...
+                             Advance %in% after.play ~ 99L, # after this specific play
                              TRUE ~ 0L),                     # before this specific play
            .after=AtBatID) |>
     # if know when made it to a previous base, then everything after that must be after that
@@ -109,9 +109,8 @@ make_plays <- function(g, p,
     arrange(AtBatID, AtBatPitches, AtBatID_Runner, Base) |>
     group_by(AtBatID) |> fill(Batter, .direction="downup") |> ungroup() |>
     # now that they're in the right place, can put in the correct AtBatPitches
-    mutate(AtBatPitches=na_if(AtBatPitches, 100L)) |>
+    mutate(AtBatPitches=na_if(AtBatPitches, 99L)) |>
     fill(AtBatPitches) |>
-    mutate(AtBatPitches=if_else(AtBatPitches==1000L, 100L, AtBatPitches)) |>
     # need to change isOut to NA if not their last stop
     mutate(lastbase=Base==max(-1, Base, na.rm=TRUE), .by=AtBatID_Runner) |>
     mutate(isOut=if_else(!lastbase, NA, isOut),
