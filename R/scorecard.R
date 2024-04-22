@@ -34,9 +34,9 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
     ## Pitches: total pitches during at-bat
     game$plays <- game$plays |> toBase_fun() |> Pitches_fun()
-    game$B2 <- str_remove(game$B2, pattern.out)
-    game$B3 <- str_remove(game$B3, pattern.out)
-    game$B4 <- str_remove(game$B4, pattern.out)
+    game$plays$B2 <- str_remove(game$plays$B2, pattern.out)
+    game$plays$B3 <- str_remove(game$plays$B3, pattern.out)
+    game$plays$B4 <- str_remove(game$plays$B4, pattern.out)
   }
 
   pages <- match.arg(pages)
@@ -262,7 +262,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       x3 <- tibble(Inning = c(-1, 0, ins), N = c("P", "Total", as.character(ins)), Order = 0)
       x <- bind_rows(x1, x2, x3) |>
         mutate(x = (Inning + 2) / 16,
-               y = 1 - (Order + 0.5) / 7)
+               y = 1 - (Order + 0.5) / max(c(7, Order+1)))
       gf <- frameGrob(grid.layout())
       gf <- placeGrob(gf,
                       textGrob(paste(x$N), x = unit(x$x,"npc"), y = unit(x$y, "npc"),
