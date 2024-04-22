@@ -261,7 +261,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       ins <- seq_len(max(x1$Inning))
       x3 <- tibble(Inning = c(-1, 0, ins), N = c("P", "Total", as.character(ins)), Order = 0)
       x <- bind_rows(x1, x2, x3) |>
-        mutate(x = (Inning + 2) / 16,
+        mutate(x = (Inning + 2) / 24,
                y = 1 - (Order + 0.5) / max(c(7, Order+1)))
       gf <- frameGrob(grid.layout())
       gf <- placeGrob(gf,
