@@ -19,7 +19,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
                       when_format=MDY_format,
                       toBase_fun=add_ToBase,
-                      Pitches_fun=add_Pitches
+                      Pitches_fun=add_Pitches,
+                      pattern.out="^X"
                       ) {
   blank <- missing(game)
 
@@ -33,6 +34,9 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
     ## Pitches: total pitches during at-bat
     game$plays <- game$plays |> toBase_fun() |> Pitches_fun()
+    game$B2 <- str_remove(game$B2, pattern.out)
+    game$B3 <- str_remove(game$B3, pattern.out)
+    game$B4 <- str_remove(game$B4, pattern.out)
   }
 
   pages <- match.arg(pages)
