@@ -20,7 +20,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       when_format=MDY_format,
                       toBase_fun=add_ToBase,
                       Pitches_fun=add_Pitches,
-                      pattern.out="^X"
+                      pattern.out="^X",
+                      start_count=c(0,0)
                       ) {
   blank <- missing(game)
 
@@ -100,10 +101,19 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       pointsGrob(x = xx, y=rep(yy, count[3]), pch = 19,
                  size = unit(2, "pt"))
     } else { NULL }
+    countX_start <- if(any(start_count > 0)) {
+      X <- rep(FALSE, 5)
+      X[seq_len(start_count[1])] <- TRUE
+      X[seq_len(start_count[2])+3] <- TRUE
+      segmentsGrob(x0=xs[X] + pitchsize*0.1,
+                   y0=ys[X] - pitchsize*0.5,
+                   x1=xs[X] + pitchsize*0.9,
+                   y1=ys[X] - pitchsize*0.5)
+    } else { NULL }
     countX <- if(any(count[1:2] > 0)) {
       X <- rep(FALSE, 5)
-      X[seq_len(count[1])  ] <- TRUE
-      X[seq_len(count[2])+3] <- TRUE
+      X[seq_len(count[1])+start_count[1]] <- TRUE
+      X[seq_len(count[2])+3+start_count[2]] <- TRUE
       segmentsGrob(x0=xs[X],
                    y0=ys[X] - pitchsize,
                    x1=xs[X] + pitchsize,
@@ -210,7 +220,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                    gp = gpar(col=pitchslashcolor, lwd=0.25))
     }
     gTree(children=gList(bases, lines, fill, action,
-                         pitchboxes, countX, fouls,
+                         pitchboxes, countX_start, countX, fouls,
                          play, out, bybase,
                          sh, pitchnum, box))
   }
