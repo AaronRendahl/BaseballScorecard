@@ -21,7 +21,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       toBase_fun=add_ToBase,
                       Pitches_fun=add_Pitches,
                       pattern.out="^X",
-                      start_count=c(0,0)
+                      start_count=c(0,0),
+                      team_display=team_name
                       ) {
   blank <- missing(game)
 
@@ -327,8 +328,10 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
 
   upper <- function(game, side,
                     team = if(!missing(game)) game$teams[side] else NA,
+                    team_display,
                     header = c("none", "about", "score")) {
     header <- match.arg(header)
+    if(is.na(team_display)) team_display <- team
     dt <- if(header == "about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
@@ -378,7 +381,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       side == 2 ~ "@ ",
                       side == 1 ~ "v. ",
                       TRUE ~ "")
-      teamtext <- textGrob(paste0(vs, team),
+      teamtext <- textGrob(paste0(vs, team_display),
                            x = unit(1 * haslogo, "snpc"),
                            y = 0.55,
                            just=c("left", "center"),
@@ -461,14 +464,14 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     gf
   }
 
-  makeside <- function(game, side, team=NA, header, nrow) {
+  makeside <- function(game, side, team=NA, header, nrow, team_display=team) {
     if(!missing(game)) {
-      header.grob <- upper(game, side, header=header)
+      header.grob <- upper(game, side, header=header, team_display=team_display)
       main.grob <- mainbox(game$plays |> filter(Side==side),
                            game$lineup |> filter(Side==side), nrow=nrow)
       footer.grob <- lower(game$plays |> filter(Side==side))
     } else {
-      header.grob <- upper(header=header, team=team)
+      header.grob <- upper(header=header, team=team, team_display=team_display)
       main.grob <- mainbox(nrow=nrow)
       footer.grob <- lower()
     }
@@ -495,7 +498,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     nr <- max(c(11, game$lineup$Lineup))
     sides <- 1:2
     if(team_name==game$teams[2]) sides <- rev(sides)
-    gf1 <- makeside(game, sides[1], nrow=nr, header="score")
+    gf1 <- makeside(game, sides[1], nrow=nr, header="score", team_display=team_display)
     gf2 <- makeside(game, sides[2], nrow=nr, header="about")
   }
 
