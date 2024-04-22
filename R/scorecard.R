@@ -354,7 +354,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       xs <- (1 - xw) + xw / np1 * (0:np1)
       a3 <- segmentsGrob(x0 = xs, x1 = xs, y0 = 0.3, y1 = 0.8, gp = gpar(lwd = 0.25))
       ys <- c(0.3, 0.55, 0.8)
-      a4 <- segmentsGrob(x0 = 0.65, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
+      a4 <- segmentsGrob(x0 = 0.6, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
         score <- get_score(game) |> as.data.frame()
@@ -414,11 +414,17 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       # make the graphics...
       get_X <- function(Lineup, Inning) {
         tibble(Lineup=Lineup, Inning=Inning) |>
+          ## this part tries to notice if anyone is out of order
+          mutate(diff=(Lineup-lag(Lineup)), gap=diff%%max(Lineup),
+                 .by="Inning") |>
+          mutate(Xorder=cumsum(!is.na(diff) & (gap>2 & diff<0))) |>
+          select(-diff, -gap) |>
+          ## this part looks for if they batted around
           group_by(Lineup, Inning) |> mutate(X=1:n()) |>
           group_by(Inning) |> mutate(X=cummax(X) - 1) |>
           nest() |> ungroup() |>
           mutate(X3=purrr::map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
-          unnest(data) |> mutate(X=X+X4) |> select(-X3, -X4) |>
+          unnest(data) |> mutate(X=X+X4+Xorder) |> select(-X3, -X4, -Xorder) |>
           ungroup() |> pull(X)
       }
       d <- d |> mutate(X=get_X(Lineup, Inning)) |>
