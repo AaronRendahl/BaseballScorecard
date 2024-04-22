@@ -106,7 +106,7 @@ toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$
       x <- readxl::read_excel(path=path, sheet=sheet, col_names=FALSE, .name_repair="minimal")
       dim(x) |> setNames(c("rows", "cols"))
     }
-    out <- drive_put(file, file.path(dir, newfile), type="spreadsheet")
+    out <- googledrive::drive_put(file, file.path(dir, newfile), type="spreadsheet")
     dims <- tibble(sheet=readxl::excel_sheets(file)) |>
       mutate(purrr::map_dfr(sheet, dimxl, path=file))
     for(i in 1:nrow(dims)) {
@@ -114,7 +114,7 @@ toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$
                    nrow=dims$rows[i]+1, ncol=dims$cols[i]+1, exact=TRUE)
     }
   } else {
-    out <- drive_put(file, file.path(dir, newfile))
+    out <- googledrive::drive_put(file, file.path(dir, newfile))
   }
   out
 }
