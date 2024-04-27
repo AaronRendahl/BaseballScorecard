@@ -113,15 +113,17 @@ make_plays <- function(g, p,
     fill(AtBatPitches) |>
     # need to change isOut to NA if not their last stop
     mutate(lastbase=Base==max(-1, Base, na.rm=TRUE), .by=AtBatID_Runner) |>
-    mutate(isOut=if_else(!lastbase, NA, isOut),
-           R = (Base==4 & !isOut) * 1L,
-           LOB = (Base!=4 & !isOut) * 1L) |>
+    mutate(R = (Base==4 & !isOut) * 1L,
+           LOB = if_else(!lastbase, 0L, (Base!=4 & !isOut) * 1L)) |>
+    mutate(Type=case_when(!is.na(Advance) ~ "Runner", "Play")) |>
     # final selection of variables
-    select(AtBatID, AtBatPitches, Side, Row, Inning, Lineup,
-           Batter, Pitcher, Runner, AtBatID_Runner, Lineup_Runner,
+    select(Row, Inning, Side, AtBatID, AtBatPitches,
+           Lineup, AtBatID_Runner, Lineup_Runner,
+           Batter, Pitcher, Runner,
+           Type,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance,
-           Base, isOut, R, LOB, Fielders)
+           Base, Out=isOut, R, LOB, Fielders)
 }
 
 add_plays <- function(gs, ...) {
