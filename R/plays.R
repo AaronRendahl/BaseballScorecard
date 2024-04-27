@@ -115,7 +115,7 @@ make_plays <- function(g, p,
     mutate(lastbase=Base==max(-1, Base, na.rm=TRUE), .by=AtBatID_Runner) |>
     mutate(R = (Base==4 & !isOut) * 1L,
            LOB = if_else(!lastbase, 0L, (Base!=4 & !isOut) * 1L)) |>
-    mutate(Type=case_when(!is.na(Advance) ~ "Runner", "Play")) |>
+    mutate(Type=case_when(!is.na(Advance) ~ "Runner", TRUE ~ "Play")) |>
     # final selection of variables
     select(Row, Inning, Side, AtBatID, AtBatPitches,
            Lineup, AtBatID_Runner, Lineup_Runner,
