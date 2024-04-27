@@ -61,16 +61,22 @@ calc_stats <- function(data, calculations, sortby=NA) {
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
 counting_stats <- function(d, key=BaseballScorecard::codes) {
 
-  #key <- readxl::read_excel("inst/extdata/codes.xlsx", "codes")
-  #usethis::use_data(key, overwrite=TRUE)
+  #codes <- readxl::read_excel("inst/extdata/codes.xlsx", "codes")
+  #usethis::use_data(codes, overwrite=TRUE)
 
   d <- d |> mutate(.idx=1:n())
 
-  key <- key |> select(-Description)
+  key3 <- key |> select(Type, Code, ends_with("_")) |>
+    pivot_longer(ends_with("_"), values_drop_na = TRUE) |>
+    mutate(Type=paste0(name, Type)) |>
+    select(-name)
+  key <- key |> select(-Description) |> select(-ends_with("_"))
   key.num <- key |> select(Type, Code, where(is.numeric))
   key.chr <- key |> select(Type, Code, !where(is.numeric)) |>
     pivot_longer(c(-Type, -Code), values_drop_na = TRUE) |>
-    select(-name) |> mutate(X=1L) |>
+    select(-name) |>
+    bind_rows(key3) |>
+    mutate(X=1L) |>
     pivot_wider(names_from=value, values_from=X)
   key2 <- full_join(key.num, key.chr, by=c("Type", "Code")) |>
     mutate(across(c(-Code), \(x) {
@@ -83,13 +89,15 @@ counting_stats <- function(d, key=BaseballScorecard::codes) {
   nn <- setdiff(names(key2), c("Type", "Code"))
 
   ## check that all codes are found in the key
-  mis <- setdiff(c(d$Play, d$B1, d$Advance), c(NA, key$Code))
+  mis <- setdiff(c(d$Play, d$B1, d$Advance, d$Advance_Play, d$Advance_B1), c(NA, key$Code))
   if(length(mis)>0) {
     stop(mis, " not found!")
   }
 
-  dx <- d |> select(.idx, Play, B1, Advance) |>
-    pivot_longer(c(Play, B1, Advance), values_drop_na = TRUE,
+  dx <- d |> select(.idx, Play, B1, Advance,
+                    Advance_Play, Advance_B1) |>
+    pivot_longer(c(Play, B1, Advance, Advance_Play, Advance_B1),
+                 values_drop_na = TRUE,
                  names_to="Type", values_to="Code") |>
     left_join(key2, by=c("Type", "Code")) |> select(-Type, -Code) |>
     summarize(across(everything(), \(x) {
@@ -109,7 +117,10 @@ counting_stats <- function(d, key=BaseballScorecard::codes) {
       x
     }), .by=c(.idx)) |>
     mutate(across(everything(), \(x) replace_na(x, 0)))
-  d |> left_join(dx, by=".idx")
+  d |> left_join(dx, by=".idx") |>
+    mutate(Bases=case_when(Out==1 ~ 0,
+                           is.na(Advance) ~ Base,
+                           !is.na(Advance) ~ 1))
 }
 
 ## BATTER STATS
