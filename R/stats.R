@@ -48,14 +48,18 @@ pitcher_cols_total <- c(pitcher_cols_team,
                         "K.", "BBHB", "BIP", "H.")
 attr(pitcher_cols_total, "sortby") <- "SR + notOB + notBBHB:\nPitching Sum"
 
-calc_stats <- function(data, calculations, sortby=NA) {
+calc_stats <- function(data, count_vars, calculations, by, keep, sortby=NA,
+                       keep.all=c(by, keep)) {
+  d <- data |> summarize(Games=length(unique(code)),
+                         across(all_of(count_vars), \(x) sum(x, na.rm=TRUE)), .by=all_of(by))
   for(n in names(calculations)) {
-    data[[n]] <- with(data, eval(calculations[[n]]))
+    d[[n]] <- with(d, eval(calculations[[n]]))
   }
   if(!is.na(sortby)) {
-    data <- data[order(-data[[sortby]]),]
+    d <- d[order(-d[[sortby]]),]
   }
-  data
+  print(keep.all)
+  d |> select(all_of(keep.all))
 }
 
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
