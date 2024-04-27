@@ -36,9 +36,14 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
     ## Pitches: total pitches during at-bat
     game$plays <- game$plays |> toBase_fun() |> Pitches_fun()
-    game$plays$B2 <- str_remove(game$plays$B2, pattern.out)
-    game$plays$B3 <- str_remove(game$plays$B3, pattern.out)
-    game$plays$B4 <- str_remove(game$plays$B4, pattern.out)
+    fixB <- function(x) {
+      x |> str_remove(pattern.out) |>
+        str_remove("^\\?") |>
+        str_replace("^([A-Z]+).*$", "\\1")
+    }
+    game$plays$B2 <- fixB(game$plays$B2)
+    game$plays$B3 <- fixB(game$plays$B3)
+    game$plays$B4 <- fixB(game$plays$B4)
   }
 
   pages <- match.arg(pages)
@@ -193,8 +198,6 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       }
     }
     bybase <- if(missing(bybase)) { NULL } else {
-      bybase[bybase == "?"] <- ""
-      bybase <- str_remove(bybase, "-.*")
       textGrobNA <- function(label, x, y, ...) {
         if(is.na(label)) return(NULL)
         textGrob(label, x, y, ...)
