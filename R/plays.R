@@ -126,7 +126,7 @@ make_plays <- function(g, p,
            PlayType,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance, Advance_Play, Advance_B1,
-           Base, Out=isOut, R, LOB, Fielders)
+           Base, Outs=isOut, R, LOB, Fielders)
 }
 
 add_plays <- function(gs, ...) {
