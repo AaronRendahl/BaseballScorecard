@@ -57,8 +57,7 @@ calc_stats <- function(data, calculations, columns) {
   if(!is.null(sortby)) {
     data <- data[order(-data[[sortby]]),]
   }
-  keep <- c("about", "when", "vs", "Number", "Name", "G", "Lineup", "Order")
-  data[c(intersect(keep, names(data)), columns)]
+  data
 }
 
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
