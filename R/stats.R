@@ -48,13 +48,11 @@ pitcher_cols_total <- c(pitcher_cols_team,
                         "K.", "BBHB", "BIP", "H.")
 attr(pitcher_cols_total, "sortby") <- "SR + notOB + notBBHB:\nPitching Sum"
 
-calc_stats <- function(data, calculations, columns) {
-  ok <- intersect(names(calculations), columns)
-  for(n in ok) {
+calc_stats <- function(data, calculations, sortby=NA) {
+  for(n in names(calculations)) {
     data[[n]] <- with(data, eval(calculations[[n]]))
   }
-  sortby <- attr(columns, "sortby")
-  if(!is.null(sortby)) {
+  if(!is.na(sortby)) {
     data <- data[order(-data[[sortby]]),]
   }
   data
@@ -63,9 +61,8 @@ calc_stats <- function(data, calculations, columns) {
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
 counting_stats <- function(d, key=BaseballScorecard::codes) {
 
-  #codes <- readxl::read_excel("inst/extdata/codes.xlsx", "codes")
-  #save(codes, file="data/codes.rda")
-  #usethis::use_data(codes, overwrite=TRUE)
+  #key <- readxl::read_excel("inst/extdata/codes.xlsx", "codes")
+  #usethis::use_data(key, overwrite=TRUE)
 
   d <- d |> mutate(.idx=1:n())
 
