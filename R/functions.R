@@ -18,8 +18,8 @@ add_ToBase <- function(x, pattern.out="^X") {
   x |> mutate(ToBase=purrr::pmap_dbl(list(B1, B2, B3, B4), f1))
 }
 
-add_Pitches <- function(x, NoPitch=key$Outcome[key$Pitch=="No Pitch"]) {
-  x |> mutate(Pitches=Balls + Strikes + Fouls + !(Play %in% NoPitch))
+add_Pitches <- function(x, NoPitch=BaseballScorecard::codes |> filter(Pitch=="NoPitch") |> pull("Code")) {
+  x |> mutate(Pitches=Balls + Strikes + Fouls + !(Play %in% NoPitch | B1 %in% NoPitch))
 }
 
 cleanplays <- function(d) {
