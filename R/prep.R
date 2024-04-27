@@ -28,8 +28,6 @@ prepDataList <- function(x, format=fmt) {
       x
     }
     xi <- as_tibble(xi, .name_repair=unique_Blank)
-    ## remove Outs from output now that have IP
-    xi$Outs <- NULL
     ## add scorecard links as hyperlinks to "when" column
     xi <- xi |> rename(any_of(c(.hyperlink.when="scorecard_link")))
     ## Determine which columns are all missing. Specifically should be these:
