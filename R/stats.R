@@ -31,7 +31,7 @@ batter_cols_total <- c(batter_cols_team,
                        "K.", "BBHB", "BIP", "H.")
 attr(batter_cols_total, "sortby") <- "SLG + OBPE + notK/PA:\nBatting Sum"
 
-pitcher_calculations <- list("SR" = "S/P", "SR." = "S/P",
+pitcher_calculations <- list("SR" = "Strikes/Pitches", "SR." = "SR",
                              "IP" = "getIP(Outs)",
                              "BBHB/BF" = "(BB + HB) / BF",
                              "Opp. OBP" = "(H + BB + HB) / BF",
@@ -39,7 +39,7 @@ pitcher_calculations <- list("SR" = "S/P", "SR." = "S/P",
                              K.="K", BBHB="BB+HB", BIP="BF - K - BBHB", H.="H",
                              "Blank" = NA) |>
   lapply(function(x) parse(text=x))
-pitcher_cols_ind <- c("IP", "Outs", "BF", "S", "P", "SR", "H", "AB", "K", "BB", "HB", "ROE",
+pitcher_cols_ind <- c("IP", "BF", "Strikes", "Pitches", "SR", "H", "AB", "K", "BB", "HB", "ROE",
                       "1B", "2B", "3B", "HR")
 pitcher_cols_team <- c(pitcher_cols_ind, "SR.", "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
 pitcher_cols_ind <- pitcher_cols_team
@@ -58,11 +58,10 @@ calc_stats <- function(data, count_vars, calculations, by, keep, sortby=NA,
   if(!is.na(sortby)) {
     d <- d[order(-d[[sortby]]),]
   }
-  print(keep.all)
   d |> select(all_of(keep.all))
 }
 
-## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, isOut, Fielders
+## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, Outs, Fielders
 counting_stats <- function(d, key=BaseballScorecard::codes) {
 
   #codes <- readxl::read_excel("inst/extdata/codes.xlsx", "codes")
@@ -122,7 +121,7 @@ counting_stats <- function(d, key=BaseballScorecard::codes) {
     }), .by=c(.idx)) |>
     mutate(across(everything(), \(x) replace_na(x, 0)))
   d |> left_join(dx, by=".idx") |>
-    mutate(Bases=case_when(Out==1 ~ 0,
+    mutate(Bases=case_when(Outs > 0 ~ 0,
                            is.na(Advance) ~ Base,
                            !is.na(Advance) ~ 1))
 }
