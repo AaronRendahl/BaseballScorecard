@@ -97,7 +97,10 @@ make_plays <- function(g, p,
     separate_wider_regex(Play, c(Play="[A-Za-z_]*", Fielders=".*")) |>
     mutate(Fielders=na_if(Fielders, ""))
 
-  rx <- find_runners(px, pattern.out)
+  rx <- find_runners(px, pattern.out) |>
+    ## should check for multiple rows here, in case of two rows per ID!
+    left_join(px |> select(AtBatID, Advance_Play=Play, Advance_B1=B1),
+              by="AtBatID")
 
   bind_rows(rx, px) |>
     # if no runner, set the runner to the batter and the AtBatID to 0
@@ -122,7 +125,7 @@ make_plays <- function(g, p,
            Batter, Pitcher, Runner,
            PlayType,
            Pitches, Balls, Strikes, Fouls,
-           Play, B1, Advance,
+           Play, B1, Advance, Advance_Play, Advance_B1,
            Base, Out=isOut, R, LOB, Fielders)
 }
 
