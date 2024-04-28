@@ -52,9 +52,14 @@ pitcher_cols_total <- c("Number", "Name", "Games",
                         "Blank",
                         "K.", "BBHB", "BIP", "H.")
 
-calc_stats <- function(data, count_vars, calculations, by) {
+calc_stats <- function(data, count_vars, calculations, by, total) {
   d <- data |> summarize(Games=length(unique(code)),
                          across(all_of(count_vars), \(x) sum(x, na.rm=TRUE)), .by=all_of(by))
+  if(!missing(total)) {
+    d2 <- bind_cols(as_tibble(t(colSums(d[,count_vars]))),
+                    as_tibble(t(total)))
+    d <- bind_rows(d, d2)
+  }
   for(n in names(calculations)) {
     d[[n]] <- with(d, eval(calculations[[n]]))
   }
