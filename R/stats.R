@@ -61,6 +61,23 @@ calc_stats <- function(data, count_vars, calculations, by, keep, sortby=NA,
   d |> select(all_of(keep.all))
 }
 
+counting_stats_all <- function(g) {
+  p <- g |> select(code, plays) |> unnest(plays)
+
+  cs <- counting_stats(p) |>
+    mutate(AB = PA - SH - SF - BB - HB - CI - O) |>
+    mutate(Balls = Balls + Ball,
+           Strikes = Strikes + Strike,
+           Pitches = Balls + Strikes + Fouls) |>
+    mutate(HBP=HB, BF=PA) |>
+    mutate(MP=MP*onPlay, MR=MR*onPlay)
+
+  cn <- c("Pitches", "Balls", "Strikes", "Fouls", "Outs", "R", "LOB",
+          setdiff(names(cs), names(p))) |> setdiff(".idx")
+
+  list(stats=cs, names=cn)
+}
+
 ## Pitches, Balls, Strikes, Fouls, Play, B1, Advance, Base, Outs, Fielders
 counting_stats <- function(d, key=BaseballScorecard::codes) {
 
