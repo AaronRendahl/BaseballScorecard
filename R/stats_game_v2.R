@@ -29,40 +29,33 @@ game_stats <- function(g, team) {
   b1 <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
     calc_stats(cn, batter_calculations,
-               by=c("code", "Team", "Number", "Name", "Lineup"),
-               keep=batter_cols_ind) |>
-    arrange("Lineup") |>
-    select(all_of(c("Number", "Name", "Lineup", batter_cols_ind)))
+               by=c("code", "Team", "Number", "Name", "Lineup")) |>
+    arrange(Lineup) |> select(all_of(batter_cols_ind))
 
   bx <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
     calc_stats(cn, batter_calculations,
-               by=c("code", "Team", "Side"),
-               keep=batter_cols_team) |>
-    arrange("Side") |>
-    select(all_of(c(Blank1="Blank", "Team", Blank2="Blank", batter_cols_team)))
+               by=c("code", "Team", "Side")) |>
+    arrange(Side) |>select(all_of(batter_cols_team))
 
   px <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team"),
-               keep=pitcher_cols_ind) |>
-    select(all_of(c("Team", pitcher_cols_ind)))
+               by=c("code", "Team")) |>
+    select(pitcher_cols_team)
   px1 <- px |> filter(Team==team) |> mutate(Team="Team") |> rename(Name="Team")
   px2 <- px |> filter(Team==vs) |> mutate(Team="Team") |> rename(Name="Team")
 
   p1 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
     calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team", "Number", "Name"),
-               keep=pitcher_cols_ind) |>
-    select(all_of(c("Number", "Name", pitcher_cols_ind))) |>
+               by=c("code", "Team", "Number", "Name")) |>
+    select(pitcher_cols_ind) |>
     bind_rows(px1)
 
   p2 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(Team==vs) |>
     calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team", "Number", "Name"),
-               keep=pitcher_cols_ind) |>
-    select(all_of(c("Number", "Name", pitcher_cols_ind))) |>
+               by=c("code", "Team", "Number", "Name")) |>
+    select(pitcher_cols_ind) |>
     bind_rows(px2)
 
   out <- list(b1, bx, p1, p2) |>
