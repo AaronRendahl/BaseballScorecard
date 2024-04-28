@@ -110,7 +110,7 @@ toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$
     dims <- tibble(sheet=readxl::excel_sheets(file)) |>
       mutate(purrr::map_dfr(sheet, dimxl, path=file))
     for(i in 1:nrow(dims)) {
-      sheet_resize(out, sheet=dims$sheet[i],
+      googlesheets4::sheet_resize(out, sheet=dims$sheet[i],
                    nrow=dims$rows[i]+1, ncol=dims$cols[i]+1, exact=TRUE)
     }
   } else {
