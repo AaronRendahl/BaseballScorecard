@@ -40,23 +40,22 @@ game_stats <- function(g, team) {
   px <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     calc_stats(cn, pitcher_calculations,
                by=c("code", "Team")) |>
-    select(pitcher_cols_team)
-  px1 <- px |> filter(Team==team) |> mutate(Team="Team") |> rename(Name="Team")
-  px2 <- px |> filter(Team==vs) |> mutate(Team="Team") |> rename(Name="Team")
+    select(all_of(pitcher_cols_team))
 
   p1 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
     calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team", "Number", "Name")) |>
-    select(pitcher_cols_ind) |>
-    bind_rows(px1)
+               by=c("code", "Team", "Number", "Name"),
+               total=c(Name="Team")
+               ) |>
+    select(all_of(pitcher_cols_ind))
 
   p2 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(Team==vs) |>
     calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team", "Number", "Name")) |>
-    select(pitcher_cols_ind) |>
-    bind_rows(px2)
+               by=c("code", "Team", "Number", "Name"),
+               total=c(Name="Team")) |>
+    select(all_of(pitcher_cols_ind))
 
   out <- list(b1, bx, p1, p2) |>
     setNames(c(paste(team, "Batting"), "Team Batting", paste(c(team, vs), "Pitching")))
