@@ -26,16 +26,47 @@ game_stats <- function(g, team) {
   cs <- cs2$stats
   cn <- cs2$names
 
+  runner_calculations <- list()
+  batter_counting <- setdiff(cn, c("R", "SB"))
+  runner_counting <- c(cn, "R", "SB")
+  batter_runner_cols <- c("PA", "H", "AB", "BA", "R", "SB",
+                          "K", "BB", "HBP", "ROE", "1B", "2B", "3B", "HR")
+  br_cols2 <- c("SLG", "OBPE", "K/PA", "SLG + OBPE + notK/PA:\nBatting Sum")
+  runner_cols <- c("R", "SB")
+  batter_cols <- batter_runner_cols |> setdiff(runner_cols)
+  ind_cols <- c("Number", "Name", "Lineup")
+  team_cols <- c("Team", "Side")
+
   b1 <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
-    calc_stats(cn, batter_calculations,
+    calc_stats(batter_counting, batter_calculations,
                by=c("code", "Team", "Number", "Name", "Lineup")) |>
-    arrange(Lineup) |> select(all_of(batter_cols_ind))
+    select(any_of(c("Blank", ind_cols, batter_cols)))
+
+  r1 <- cs |> rename(Number=Runner) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
+    filter(Team==team) |>
+    calc_stats(runner_counting, runner_calculations,
+               by=c("code", "Team", "Number", "Name")) |>
+    select(any_of(c(ind_cols, runner_cols)))
+
+  rb1 <- full_join(b1, r1, by=c("Number", "Name")) |>
+    arrange(Lineup) |>
+    select(all_of(c(ind_cols, batter_runner_cols)))
 
   bx <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
-    calc_stats(cn, batter_calculations,
+    calc_stats(batter_counting, batter_calculations,
                by=c("code", "Team", "Side")) |>
-    arrange(Side) |>select(all_of(batter_cols_team))
+    arrange(Side) |>
+    select(any_of(c("Blank", team_cols, batter_cols, br_cols2)))
+
+  rx <- cs |> rename(Number=Runner) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
+    calc_stats(runner_counting, runner_calculations,
+               by=c("code", "Team", "Side")) |>
+    select(any_of(c(team_cols, runner_cols)))
+
+  rbx <- full_join(bx, rx, by=c("Team", "Side")) |>
+    arrange(Side) |>
+    select(all_of(c("Blank1"="Blank", "Team", "Blank2"="Blank", batter_runner_cols, br_cols2)))
 
   px <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     calc_stats(cn, pitcher_calculations,
@@ -57,7 +88,7 @@ game_stats <- function(g, team) {
                total=c(Name="Team")) |>
     select(all_of(pitcher_cols_ind))
 
-  out <- list(b1, bx, p1, p2) |>
+  out <- list(rb1, rbx, p1, p2) |>
     setNames(c(paste(team, "Batting"), "Team Batting", paste(c(team, vs), "Pitching")))
 
   c(list(header=header), out)
