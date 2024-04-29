@@ -76,6 +76,7 @@ counting_stats_all <- function(g) {
     mutate(Balls = Balls + Ball,
            Strikes = Strikes + Strike,
            Pitches = Balls + Strikes + Fouls) |>
+    mutate(HBP=HB, BF=PA) |>
     mutate(MP=MP*onPlay, MR=MR*onPlay)
 
   cn <- c("Pitches", "Balls", "Strikes", "Fouls", "Outs", "R", "LOB",
