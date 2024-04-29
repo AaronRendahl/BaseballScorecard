@@ -9,34 +9,20 @@ season_stats <- function(gs, team) {
   cs <- cs2$stats
   cn <- cs2$names
 
-  bteam <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
-    filter(Team==team) |>
-    calc_stats(cn, batter_calculations,
-               by=c("Team")) |>
-    mutate(Name="Team") |>
-    select(any_of(batter_cols_total))
-
   b1 <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
     calc_stats(cn, batter_calculations,
-               by=c("Team", "Number", "Name")) |>
+               by=c("Team", "Number", "Name"),
+               total=c(Name="Team")) |>
     select(all_of(batter_cols_total)) |>
-    bind_rows(bteam) |>
     arrange(`SLG + OBPE + notK/PA:\nBatting Sum`)
-
-  pteam <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
-    filter(Team==team) |>
-    calc_stats(cn, pitcher_calculations,
-               by=c("Team")) |>
-    select(any_of(pitcher_cols_total)) |>
-    mutate(Name="Team")
 
   p1 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
     calc_stats(cn, pitcher_calculations,
-               by=c("Team", "Number", "Name")) |>
+               by=c("Team", "Number", "Name"),
+               total=c(Name="Team")) |>
     select(all_of(pitcher_cols_total)) |>
-    bind_rows(pteam) |>
     arrange(`SR + notOB + notBBHB:\nPitching Sum`)
 
   list(b1, p1) |> setNames(c("Batting", "Pitching"))
