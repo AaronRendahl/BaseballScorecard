@@ -3,22 +3,34 @@ add_stats <- function(gs, ...) {
   gs
 }
 
-br_stats <- function(counts, lx, ...,
+br_stats <- function(counts, lx, ..., total,
                      batter_by, batter_counts, batter_cols, batter_calculations,
                      runner_by, runner_counts, runner_cols, runner_calculations,
-                     final_cols, arrange_by, arrange_desc) {
-  foo <- counts |> rename(Number=Batter) |> left_join(lx, by=c('code', 'Side', 'Number'))
+                     final_cols, arrange_by, arrange_desc=TRUE) {
   b1 <- counts |> rename(Number=Batter) |> left_join(lx, by=c('code', 'Side', 'Number')) |>
     filter(...) |>
-    calc_stats(batter_counts, batter_calculations, by=batter_by) |>
+    calc_stats(batter_counts, batter_calculations, by=batter_by, total=total) |>
     select(all_of(batter_cols))
   r1 <- cs |> rename(Number=Runner) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
     filter(...) |>
-    calc_stats(runner_counts, runner_calculations, by=runner_by) |>
+    calc_stats(runner_counts, runner_calculations, by=runner_by, total=total) |>
     select(all_of(runner_cols))
   descif <- if(arrange_desc) desc else identity
   full_join(b1, r1, by=intersect(runner_cols, batter_cols)) |>
     arrange(descif(.data[[arrange_by]])) |>
+    select(all_of(final_cols))
+}
+
+p_stats <- function(counts, lx, ..., total,
+                    pitcher_by, pitcher_counts, pitcher_cols, pitcher_calculations,
+                    final_cols=pitcher_cols, arrange_by, arrange_desc=TRUE) {
+  arrangeif <- if(is.null(arrange_by)) \(x, ...) x else arrange
+  descif <- if(arrange_desc) desc else identity
+  cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
+    filter(...) |>
+    calc_stats(pitcher_counts, pitcher_calculations, by=pitcher_by, total=total) |>
+    select(all_of(pitcher_cols)) |>
+    arrangeif(descif(.data[[arrange_by]])) |>
     select(all_of(final_cols))
 }
 
@@ -68,42 +80,34 @@ game_stats <- function(g, team) {
                   runner_calculations=runner_calculations,
                   final_cols=c(ind_cols, batter_runner_cols),
                   arrange_by="Lineup", arrange_desc=FALSE)
-  ###
 
-  bx <- cs |> rename(Number=Batter) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
-    calc_stats(batter_counting, batter_calculations,
-               by=c("code", "Team", "Side")) |>
-    arrange(Side) |>
-    select(any_of(c("Blank", team_cols, batter_cols, br_cols2)))
+  brx <- br_stats(cs, lx_Batter,
+                  batter_by=c("code", "Team", "Side"),
+                  batter_counts=batter_counting,
+                  batter_cols=c("Blank", "Team", "Side", batter_cols, br_cols2),
+                  batter_calculations=batter_calculations,
+                  runner_by=c("code", "Team", "Side"),
+                  runner_counts=runner_counting,
+                  runner_cols=c("Team", "Side", runner_cols),
+                  runner_calculations=runner_calculations,
+                  final_cols=c("Blank1"="Blank", "Team", "Blank2"="Blank", batter_runner_cols, br_cols2),
+                  arrange_by="Side", arrange_desc=FALSE)
 
-  rx <- cs |> rename(Number=Runner) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
-    calc_stats(runner_counting, runner_calculations,
-               by=c("code", "Team", "Side")) |>
-    select(any_of(c(team_cols, runner_cols)))
+  p1 <- p_stats(cs, lx_Pitcher, total=c(Name="Team"),
+                Team==team,
+                pitcher_by = c("code", "Team", "Number", "Name"),
+                pitcher_counts = cn,
+                pitcher_cols = c("Team", pitcher_cols_ind),
+                pitcher_calculations = pitcher_calculations,
+                arrange_by=NULL)
 
-  brx <- full_join(bx, rx, by=c("Team", "Side")) |>
-    arrange(Side) |>
-    select(all_of(c("Blank1"="Blank", "Team", "Blank2"="Blank", batter_runner_cols, br_cols2)))
-
-  px <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
-    calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team")) |>
-    select(all_of(pitcher_cols_team))
-
-  p1 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
-    filter(Team==team) |>
-    calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team", "Number", "Name"),
-               total=c(Name="Team")
-               ) |>
-    select(all_of(pitcher_cols_ind))
-
-  p2 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
-    filter(Team==vs) |>
-    calc_stats(cn, pitcher_calculations,
-               by=c("code", "Team", "Number", "Name"),
-               total=c(Name="Team")) |>
-    select(all_of(pitcher_cols_ind))
+  p2 <- p_stats(cs, lx_Pitcher, total=c(Name="Team"),
+                Team==vs,
+                pitcher_by = c("code", "Team", "Number", "Name"),
+                pitcher_counts = cn,
+                pitcher_cols = c("Team", pitcher_cols_ind),
+                pitcher_calculations = pitcher_calculations,
+                arrange_by=NULL)
 
   out <- list(br1, brx, p1, p2) |>
     setNames(c(paste(team, "Batting"), "Team Batting", paste(c(team, vs), "Pitching")))
