@@ -11,7 +11,7 @@ br_stats <- function(counts, lx, ..., total,
     filter(...) |>
     calc_stats(batter_counts, batter_calculations, by=batter_by, total=total) |>
     select(all_of(batter_cols))
-  r1 <- cs |> rename(Number=Runner) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
+  r1 <- counts |> rename(Number=Runner) |> left_join(lx_Batter, by=c('code', 'Side', 'Number')) |>
     filter(...) |>
     calc_stats(runner_counts, runner_calculations, by=runner_by, total=total) |>
     select(all_of(runner_cols))
@@ -26,7 +26,7 @@ p_stats <- function(counts, lx, ..., total,
                     final_cols=pitcher_cols, arrange_by, arrange_desc=TRUE) {
   arrangeif <- if(is.null(arrange_by)) \(x, ...) x else arrange
   descif <- if(arrange_desc) desc else identity
-  cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
+  counts |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(...) |>
     calc_stats(pitcher_counts, pitcher_calculations, by=pitcher_by, total=total) |>
     select(all_of(pitcher_cols)) |>
