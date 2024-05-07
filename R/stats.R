@@ -1,3 +1,13 @@
+get_score <- function(game) {
+  score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
+    pivot_wider(names_from=Inning, values_from=R) |>
+    arrange(Side) |> select(-Side) |>
+    as.matrix()
+  score <- cbind(score, R=rowSums(score, na.rm=TRUE))
+  rownames(score) <- game$teams
+  score
+}
+
 ## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
 # d1 |> select(Lineup, Outcome, B4) |> mutate(RBI_by=if_else(Outcome=="HR", Lineup, B4)) |>
 #   filter(!is.na(RBI_by)) |> select(Lineup=RBI_by) |>
