@@ -97,7 +97,7 @@ game_stats <- function(g, team) {
                 Team==team,
                 pitcher_by = c("code", "Team", "Number", "Name"),
                 pitcher_counts = cn,
-                pitcher_cols = c("Team", pitcher_cols_ind),
+                pitcher_cols = pitcher_cols_ind,
                 pitcher_calculations = pitcher_calculations,
                 arrange_by=NULL)
 
@@ -105,7 +105,7 @@ game_stats <- function(g, team) {
                 Team==vs,
                 pitcher_by = c("code", "Team", "Number", "Name"),
                 pitcher_counts = cn,
-                pitcher_cols = c("Team", pitcher_cols_ind),
+                pitcher_cols = pitcher_cols_ind,
                 pitcher_calculations = pitcher_calculations,
                 arrange_by=NULL)
 
