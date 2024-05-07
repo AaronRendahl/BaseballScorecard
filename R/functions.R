@@ -1,7 +1,8 @@
 ## helper functions
 MDY_format <- function(x) {
-  paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
-         format(x, "%I:%M%P") |> str_remove("^0"))
+  out <- paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
+                format(x, "%I:%M%P") |> str_remove("^0"))
+  if_else(is.na(x), as.character(x), out)
 }
 
 add_ToBase <- function(x, pattern.out="^X") {
