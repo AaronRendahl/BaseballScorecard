@@ -42,7 +42,7 @@ batter_cols_total <- c("Number", "Name", "Games", "Blank1"="Blank",
                        "SLG", "OBPE", "K/PA",
                        "SLG + OBPE + notK/PA:\nBatting Sum",
                        Blank4="Blank",
-                       "K.", "BBHB", "BIP", "H.")
+                       "K.", "BBHB", "BIP", "H.", "Soft", "Hard")
 
 pitcher_calculations <- list("SR" = "Strikes/Pitches", "SR." = "SR",
                              "IP" = "getIP(Outs)",
@@ -60,7 +60,7 @@ pitcher_cols_team <- c("Team", pitcher_cols1, pitcher_cols2)
 pitcher_cols_total <- c("Number", "Name", "Games",
                         pitcher_cols1, pitcher_cols2,
                         "Blank",
-                        "K.", "BBHB", "BIP", "H.")
+                        "K.", "BBHB", "BIP", "H.", "Soft", "Hard")
 
 calc_stats <- function(data, count_vars, calculations, by, total) {
   d <- data |> summarize(Games=length(unique(code)),
@@ -78,13 +78,13 @@ calc_stats <- function(data, count_vars, calculations, by, total) {
   d
 }
 
-get_Contact <- function(Play, B1) {
+get_Contact <- function(p) {
   ## do have some 1Bs with unknown Play for other teams...
-  tibble(Play=Play, B1=B1) |>
+  p |> select(B1, Play, Fielders) |>
     mutate(Play=if_else(B1 %in% c("BB", "HB"), B1, Play)) |>
     mutate(Play=na_if(Play, "_")) |>
-    mutate(Play2 = str_replace(Play, "([A-Z]+)([1-9]).*", "\\1-\\2")) |>
-    separate(Play2, c("HitType", "HitLocation"), remove = FALSE, convert=TRUE, fill="right") |>
+    rename(HitType="Play") |>
+    mutate(HitLocation=str_sub(Fielders, 1, 1) |> as.integer()) |>
     mutate(HitFar=if_else(HitLocation>=7, "Out", "In"),
            HitHard=if_else(HitFar=="Out" | HitType=="L", "Hard", "Soft"),
            HitType=str_replace(HitType, "K.*", "K"),
@@ -92,14 +92,20 @@ get_Contact <- function(Play, B1) {
            Outcome=if_else(is.na(HitHard), HitType, HitHard)) |>
     mutate(Outcome=if_else(is.na(Outcome) & B1=="1B", "Soft",
                            if_else(is.na(Outcome) & B1 %in% c("2B", "3B", "HR"), "Hard", Outcome))) |>
-    pull(Outcome)
+    select(Outcome) |>
+    mutate(X=1, idx=1:n()) |>
+    pivot_wider(names_from=Outcome, values_from=X) |>
+    select(Soft, Hard) |>
+    mutate(across(everything(), \(x) replace_na(x, 0L)))
+    #select(-any_of(c("NA", "idx"))) |>
+    #rename_with(\(x) paste0(x, "_contact"))
 }
 
 
 counting_stats_all <- function(g) {
   p <- g |> select(code, plays) |> unnest(plays)
 
-  cs <- counting_stats(p) |>
+  cs <- counting_stats(p) |> bind_cols(get_Contact(p)) |>
     mutate(AB = PA - SH - SF - BB - HB - CI - O) |>
     mutate(Balls = Balls + Ball,
            Strikes = Strikes + Fouls + Strike,
