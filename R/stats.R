@@ -159,32 +159,3 @@ counting_stats <- function(d, key=BaseballScorecard::codes) {
                            is.na(Advance) ~ Base,
                            !is.na(Advance) ~ 1))
 }
-
-## BATTER STATS
-batter_counting_stats <- function(d) {
-  d |> select(Lineup, Outcome, ToBase) |> left_join(key, by="Outcome") |>
-    group_by(Lineup) |> summarize(
-      PA=sum(Outcome!="_"), H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)), #BA=NA,
-      R=sum(ToBase==4),
-      K=sum(Outcome %in% c("K", "Kd")), BB=sum(Outcome=="BB"), HBP=sum(Outcome=="HB"),
-      ROE=sum(Outcome %in% c("E", "Kd")),
-      `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-      .groups="drop")
-}
-
-## PITCHER STATS
-## returns data set with Number, Order, and then all the counting stats
-pitcher_counting_stats <- function(d) {
-  d |> select(Pitcher, Balls, Strikes, Fouls, Outcome, RunnersOut) |> left_join(key, by="Outcome") |>
-    mutate(Out = Out + RunnersOut) |> select(-RunnersOut) |>
-    mutate(Strikes = Strikes + (Pitch == "Strike"), Balls = Balls + (Pitch == "Ball")) |>
-    mutate(Order = as.integer(as_factor(paste(Pitcher)))) |>
-    group_by(Order, Pitcher) |> summarize(
-      Outs=sum(Out), BF=sum(Outcome!="_"),
-      S=sum(Strikes+Fouls), P=sum(Balls+Strikes+Fouls),
-      H=sum(Hit, na.rm=TRUE), AB=sum(!is.na(Hit)),
-      K=sum(Outcome %in% c("K", "Kd")), BB=sum(Outcome=="BB"), HB=sum(Outcome=="HB"),
-      ROE=sum(Outcome %in% c("E", "Kd")),
-      `1B`=sum(Outcome=="1B"), `2B`=sum(Outcome=="2B"), `3B`=sum(Outcome=="3B"), HR=sum(Outcome=="HR"),
-      .groups="drop") |> select(Pitcher, everything()) |> rename(Number="Pitcher")
-}
