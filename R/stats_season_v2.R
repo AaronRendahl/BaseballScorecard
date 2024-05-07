@@ -15,7 +15,7 @@ season_stats <- function(gs, team) {
                by=c("Team", "Number", "Name"),
                total=c(Name="Team")) |>
     select(all_of(batter_cols_total)) |>
-    arrange(`SLG + OBPE + notK/PA:\nBatting Sum`)
+    arrange(desc(`SLG + OBPE + notK/PA:\nBatting Sum`))
 
   p1 <- cs |> rename(Number=Pitcher) |> left_join(lx_Pitcher, by=c('code', 'Side', 'Number')) |>
     filter(Team==team) |>
@@ -23,7 +23,7 @@ season_stats <- function(gs, team) {
                by=c("Team", "Number", "Name"),
                total=c(Name="Team")) |>
     select(all_of(pitcher_cols_total)) |>
-    arrange(`SR + notOB + notBBHB:\nPitching Sum`)
+    arrange(desc(`SR + notOB + notBBHB:\nPitching Sum`))
 
   list(b1, p1) |> setNames(c("Batting", "Pitching"))
 }
