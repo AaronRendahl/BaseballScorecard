@@ -16,8 +16,14 @@ br_stats <- function(counts, lx, ..., total,
     calc_stats(runner_counts, runner_calculations, by=runner_by, total=total) |>
     select(all_of(runner_cols))
   descif <- if(arrange_desc) desc else identity
+  blank <- which(final_cols=="Blank")
+  if(length(blank)>0) {
+    names(final_cols) <- ""
+    names(final_cols)[blank] <- paste0("Blank", blank)
+  }
   full_join(b1, r1, by=intersect(runner_cols, batter_cols)) |>
     arrange(descif(.data[[arrange_by]])) |>
+    mutate(Blank=NA) |>
     select(all_of(final_cols))
 }
 
@@ -26,11 +32,17 @@ p_stats <- function(counts, lx, ..., total,
                     final_cols=pitcher_cols, arrange_by, arrange_desc=TRUE) {
   arrangeif <- if(is.null(arrange_by)) \(x, ...) x else arrange
   descif <- if(arrange_desc) desc else identity
+  blank <- which(final_cols=="Blank")
+  if(length(blank)>0) {
+    names(final_cols) <- ""
+    names(final_cols)[blank] <- paste0("Blank", blank)
+  }
   counts |> rename(Number=Pitcher) |> left_join(lx, by=c('code', 'Side', 'Number')) |>
     filter(...) |>
     calc_stats(pitcher_counts, pitcher_calculations, by=pitcher_by, total=total) |>
     select(all_of(pitcher_cols)) |>
     arrangeif(descif(.data[[arrange_by]])) |>
+    mutate(Blank=NA) |>
     select(all_of(final_cols))
 }
 
@@ -57,22 +69,25 @@ game_stats <- function(g, team) {
   cs <- cs2$stats
   cn <- cs2$names
 
-  runner_calculations <- list()
   batter_counting <- setdiff(cn, c("R", "SB"))
   runner_counting <- c(cn, "R", "SB")
-  batter_runner_cols <- c("PA", "H", "AB", "BA", "R", "SB",
+  batter_runner_cols <- c("PA", "H", "AB", "BA", "R", "SB+", "CS+",
                           "K", "BB", "HBP", "ROE", "1B", "2B", "3B", "HR")
   br_cols2 <- c("SLG", "OBPE", "K/PA", "SLG + OBPE + notK/PA:\nBatting Sum")
-  runner_cols <- c("R", "SB")
+  runner_cols <- c("R", "SB+", "CS+")
   batter_cols <- batter_runner_cols |> setdiff(runner_cols)
   ind_cols <- c("Number", "Name", "Lineup")
   team_cols <- c("Team", "Side")
+
+  pitcher_cols_ind <- c("Number", "Name", "IP", "BF", "Strikes", "Pitches", "SR", "Blank",
+                        "H", "AB", "K", "BB", "HB", "ROE", "1B", "2B", "3B", "HR", "SR.",
+                        "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
 
   br1 <- br_stats(cs, lx_Batter,
                   Team==team,
                   batter_by=c("code", "Team", "Number", "Name", "Lineup"),
                   batter_counts=batter_counting,
-                  batter_cols=c("Blank", ind_cols, batter_cols),
+                  batter_cols=c(ind_cols, batter_cols),
                   batter_calculations=batter_calculations,
                   runner_by=c("code", "Team", "Number", "Name"),
                   runner_counts=runner_counting,
@@ -84,7 +99,7 @@ game_stats <- function(g, team) {
   brx <- br_stats(cs, lx_Batter,
                   batter_by=c("code", "Team", "Side"),
                   batter_counts=batter_counting,
-                  batter_cols=c("Blank", "Team", "Side", batter_cols, br_cols2),
+                  batter_cols=c("Team", "Side", batter_cols, br_cols2),
                   batter_calculations=batter_calculations,
                   runner_by=c("code", "Team", "Side"),
                   runner_counts=runner_counting,
