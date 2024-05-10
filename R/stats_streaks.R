@@ -40,7 +40,7 @@ batting_streaks <- function(gs, team, roll_num=4) {
     geom_line(data=X.team, col=colt) + geom_point(data=X.team, fill=colt, pch=21) +
     geom_line(col=coli) + geom_point(fill=coli, pch=21) +
     xlab("Game Number") +
-    scale_x_continuous(breaks=1:3) + #seq(0, 40, by=10)) +
+    scale_x_continuous(breaks=1:10) + #seq(0, 40, by=10)) +
     ggtitle(sprintf("Batting Summary (Average for last %d games)", roll_num), subtitle=subt) +
     ylab("Batting Sum: SLG + OBPE + notK/PA")
 }
