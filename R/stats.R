@@ -29,6 +29,7 @@ batter_calculations <- list("BA" = "getBA(H, AB)",
                             "SLG" = "TB / AB",
                             "SLG + OBPE + notK/PA:\nBatting Sum" = "SLG + OBPE + (1 - `K/PA`)",
                             K.="K", BBHB="BB+HBP", BIP="PA - K - BBHB", H.="H",
+                            "BIP/AB"="BIP/AB", "Hard/BIP"="Hard/BIP",
                             "Blank" = NA) |>
   lapply(function(x) parse(text=x))
 
@@ -42,7 +43,8 @@ batter_cols_total <- c("Number", "Name", "Games", "Blank1"="Blank",
                        "SLG", "OBPE", "K/PA",
                        "SLG + OBPE + notK/PA:\nBatting Sum",
                        Blank4="Blank",
-                       "K.", "BBHB", "BIP", "H.", "Soft", "Hard")
+                       "K.", "BBHB", "BIP", "H.", "Soft", "Hard",
+                       "BIP/AB", "Hard/BIP")
 
 pitcher_calculations <- list("SR" = "Strikes/Pitches", "SR." = "SR",
                              "IP" = "getIP(Outs)",
@@ -50,6 +52,8 @@ pitcher_calculations <- list("SR" = "Strikes/Pitches", "SR." = "SR",
                              "Opp. OBP" = "(H + BB + HB) / BF",
                              "SR + notOB + notBBHB:\nPitching Sum" = "SR + (1-`Opp. OBP`) + (1-`BBHB/BF`)",
                              K.="K", BBHB="BB+HB", BIP="BF - K - BBHB", H.="H",
+                             "Strike Rate"="SR",
+                             "BIP/Strikes"="BIP/Strikes",
                              "Blank" = NA) |>
   lapply(function(x) parse(text=x))
 pitcher_cols1 <- c("IP", "BF", "Strikes", "Pitches", "SR", "H", "AB", "K", "BB", "HB", "ROE",
@@ -60,7 +64,10 @@ pitcher_cols_team <- c("Team", pitcher_cols1, pitcher_cols2)
 pitcher_cols_total <- c("Number", "Name", "Games",
                         pitcher_cols1, pitcher_cols2,
                         "Blank",
-                        "K.", "BBHB", "BIP", "H.", "Soft", "Hard")
+                        "K.", "BBHB", "BIP", "H.", "Soft", "Hard",
+                        "Strike Rate", "BIP/Strikes")
+
+runner_cols <- c("R", "SB+", "CS+")
 
 calc_stats <- function(data, count_vars, calculations, by, total) {
   d <- data |> summarize(Games=length(unique(code)),
@@ -111,7 +118,9 @@ counting_stats_all <- function(g) {
            Strikes = Strikes + Fouls + Strike,
            Pitches = Balls + Strikes + Fouls) |>
     mutate(HBP=HB, BF=PA) |>
-    mutate(MP=MP*onPlay, MR=MR*onPlay)
+    mutate(MP=MP*onPlay, MR=MR*onPlay) |>
+    mutate("SB+"=(SB+WP+PB+DI)*(1-Outs),
+           "CS+"=(SB+WP+PB+DI)*Outs)
 
   cn <- c("Pitches", "Balls", "Strikes", "Fouls", "Outs", "R", "LOB",
           setdiff(names(cs), names(p))) |> setdiff(".idx")
