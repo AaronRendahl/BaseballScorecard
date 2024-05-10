@@ -5,7 +5,7 @@ tmp1 <- tibble(name=c("IP",
                       "Contact/AB", "Hard/AB", "Hard/Contact",
                       "SR", "SR.", "K/PA", "BBHB/BF",
                       "BIP/AB", "Hard/BIP",
-                      "Strike Rate", "BIP/Strike"),
+                      "Strike Rate", "BIP/Strikes"),
                numFmt=c("0.0", rep("0.000", 9), rep("0%", 8)))
 
 tmp2 <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP", "SLG"), width=8),
