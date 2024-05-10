@@ -70,12 +70,15 @@ game_stats <- function(g, team) {
   cn <- cs2$names
 
   batter_counting <- setdiff(cn, c("R", "SB"))
-  runner_counting <- c(cn, "R", "SB")
-  batter_runner_cols <- c("PA", "H", "AB", "BA", "R", "SB+", "CS+",
-                          "K", "BB", "HBP", "ROE", "1B", "2B", "3B", "HR")
+  runner_counting <- cn
+
+  br_cols1 <- c("PA", "H", "AB", "BA", "R", "SB+", "CS+",
+                "K", "BB", "HBP", "ROE", "1B", "2B", "3B", "HR")
   br_cols2 <- c("SLG", "OBPE", "K/PA", "SLG + OBPE + notK/PA:\nBatting Sum")
+
   runner_cols <- c("R", "SB+", "CS+")
-  batter_cols <- batter_runner_cols |> setdiff(runner_cols)
+  batter_cols <- br_cols1 |> setdiff(runner_cols)
+
   ind_cols <- c("Number", "Name", "Lineup")
   team_cols <- c("Team", "Side")
 
@@ -93,7 +96,7 @@ game_stats <- function(g, team) {
                   runner_counts=runner_counting,
                   runner_cols=c("Number", "Name", runner_cols),
                   runner_calculations=runner_calculations,
-                  final_cols=c(ind_cols, batter_runner_cols),
+                  final_cols=c(ind_cols, br_cols1),
                   arrange_by="Lineup", arrange_desc=FALSE)
 
   brx <- br_stats(cs, lx_Batter,
@@ -105,7 +108,7 @@ game_stats <- function(g, team) {
                   runner_counts=runner_counting,
                   runner_cols=c("Team", "Side", runner_cols),
                   runner_calculations=runner_calculations,
-                  final_cols=c("Blank1"="Blank", "Team", "Blank2"="Blank", batter_runner_cols, br_cols2),
+                  final_cols=c("Blank1"="Blank", "Team", "Blank2"="Blank", br_cols1, br_cols2),
                   arrange_by="Side", arrange_desc=FALSE)
 
   p1 <- p_stats(cs, lx_Pitcher, total=c(Name="Team"),
