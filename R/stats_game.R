@@ -86,6 +86,11 @@ game_stats <- function(g, team) {
                         "H", "AB", "K", "BB", "HB", "ROE", "1B", "2B", "3B", "HR", "SR.",
                         "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
 
+  br1_cols <- c(ind_cols, br_cols1)
+  brx_cols <- c("Blank1"="Blank", "Team", "Blank2"="Blank", br_cols1, br_cols2)
+  p1_cols <- pitcher_cols_ind
+  p2_cols <- pitcher_cols_ind
+
   br1 <- br_stats(cs, lx_Batter,
                   Team==team,
                   batter_by=c("code", "Team", "Number", "Name", "Lineup"),
@@ -96,7 +101,7 @@ game_stats <- function(g, team) {
                   runner_counts=runner_counting,
                   runner_cols=c("Number", "Name", runner_cols),
                   runner_calculations=runner_calculations,
-                  final_cols=c(ind_cols, br_cols1),
+                  final_cols=br1_cols,
                   arrange_by="Lineup", arrange_desc=FALSE)
 
   brx <- br_stats(cs, lx_Batter,
@@ -108,14 +113,14 @@ game_stats <- function(g, team) {
                   runner_counts=runner_counting,
                   runner_cols=c("Team", "Side", runner_cols),
                   runner_calculations=runner_calculations,
-                  final_cols=c("Blank1"="Blank", "Team", "Blank2"="Blank", br_cols1, br_cols2),
+                  final_cols=brx_cols,
                   arrange_by="Side", arrange_desc=FALSE)
 
   p1 <- p_stats(cs, lx_Pitcher, total=c(Name="Team"),
                 Team==team,
                 pitcher_by = c("code", "Team", "Number", "Name"),
                 pitcher_counts = cn,
-                pitcher_cols = pitcher_cols_ind,
+                pitcher_cols = p1_cols,
                 pitcher_calculations = pitcher_calculations,
                 arrange_by=NULL)
 
@@ -123,7 +128,7 @@ game_stats <- function(g, team) {
                 Team==vs,
                 pitcher_by = c("code", "Team", "Number", "Name"),
                 pitcher_counts = cn,
-                pitcher_cols = pitcher_cols_ind,
+                pitcher_cols = p2_cols,
                 pitcher_calculations = pitcher_calculations,
                 arrange_by=NULL)
 
