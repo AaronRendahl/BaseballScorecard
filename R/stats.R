@@ -23,6 +23,8 @@ getIP <- function(x) {
 }
 
 ## STATS CALCULATIONS
+runner_calculations <- list()
+
 batter_calculations <- list("BA" = "getBA(H, AB)",
                             "K/PA" = "K / PA",
                             "OBPE" = "(H + BB + HBP + ROE) / PA",
@@ -33,7 +35,7 @@ batter_calculations <- list("BA" = "getBA(H, AB)",
                             "Blank" = NA) |>
   lapply(function(x) parse(text=x))
 
-batter_cols <- c("PA", "H", "AB", "BA", "R", Blank3="Blank", "K", "BB", "HBP", "ROE",
+batter_cols <- c("PA", "H", "AB", "BA", "R", Blank3="Blank", Blank4="Blank", "K", "BB", "HBP", "ROE",
                  "1B", "2B", "3B", "HR")
 batter_cols_ind <- c("Number", "Name", "Lineup", batter_cols)
 batter_cols_team <- c(Blank1="Blank", "Team", Blank2="Blank", batter_cols,
@@ -56,14 +58,14 @@ pitcher_calculations <- list("SR" = "Strikes/Pitches", "SR." = "SR",
                              "BIP/Strikes"="BIP/Strikes",
                              "Blank" = NA) |>
   lapply(function(x) parse(text=x))
-pitcher_cols1 <- c("IP", "BF", "Strikes", "Pitches", "SR", "H", "AB", "K", "BB", "HB", "ROE",
+pitcher_cols1 <- c("IP", "BF", "Strikes", "Pitches", "SR", "BlankX"="Blank", "H", "AB", "K", "BB", "HB", "ROE",
                   "1B", "2B", "3B", "HR")
 pitcher_cols2 <- c("SR.", "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
 pitcher_cols_ind <- c("Number", "Name", pitcher_cols1, pitcher_cols2)
 pitcher_cols_team <- c("Team", pitcher_cols1, pitcher_cols2)
 pitcher_cols_total <- c("Number", "Name", "Games",
                         pitcher_cols1, pitcher_cols2,
-                        "Blank",
+                        "Blank5"="Blank",
                         "K.", "BBHB", "BIP", "H.", "Soft", "Hard",
                         "Strike Rate", "BIP/Strikes")
 
