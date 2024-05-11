@@ -37,6 +37,7 @@ p_stats <- function(counts, lx, ..., total,
     names(final_cols) <- ""
     names(final_cols)[blank] <- paste0("Blank", blank)
   }
+  lx <- lx |> mutate(Side = 3 - Side)
   counts |> rename(Number=Pitcher) |> left_join(lx, by=c('code', 'Side', 'Number')) |>
     filter(...) |>
     calc_stats(pitcher_counts, pitcher_calculations, by=pitcher_by, total=total) |>
@@ -61,9 +62,9 @@ game_stats <- function(g, team) {
     header <- list(header, link)
   }
 
-  lx <- gs |> select(code, game) |> unnest(game) |> select(code, Side, Team, Lineup) |> unnest(Lineup)
-  lx_Batter <- lx |> select(code, Side, Team, Number, Name)
-  lx_Pitcher <- lx |> mutate(Side=3-Side) |> select(code, Side, Team, Number, Name)
+  lx <- gs |> select(code, game) |> unnest(game) |>
+    select(code, Side, Team, Lineup) |> unnest(Lineup) |>
+    select(code, Side, Team, Number, Name)
 
   cs2 <- counting_stats_all(g)
   cs <- cs2$stats
@@ -87,46 +88,52 @@ game_stats <- function(g, team) {
                         "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
 
   br1_cols <- c(ind_cols, br_cols1)
-  brx_cols <- c("Blank1"="Blank", "Team", "Blank2"="Blank", br_cols1, br_cols2)
+  brx_cols <- c("Blank", "Team", "Blank", br_cols1, br_cols2)
   p1_cols <- pitcher_cols_ind
   p2_cols <- pitcher_cols_ind
 
-  br1 <- br_stats(cs, lx_Batter,
+  bb1 <- c("code", "Team", "Number", "Name", "Lineup")
+  rb1 <- c("code", "Team", "Number", "Name")
+  br1 <- br_stats(cs, lx,
                   Team==team,
-                  batter_by=c("code", "Team", "Number", "Name", "Lineup"),
+                  batter_by=bb1,
                   batter_counts=batter_counting,
-                  batter_cols=c(ind_cols, batter_cols),
+                  batter_cols=c(bb1, batter_cols),
                   batter_calculations=batter_calculations,
-                  runner_by=c("code", "Team", "Number", "Name"),
+                  runner_by=rb1,
                   runner_counts=runner_counting,
-                  runner_cols=c("Number", "Name", runner_cols),
+                  runner_cols=c(rb1, runner_cols),
                   runner_calculations=runner_calculations,
                   final_cols=br1_cols,
                   arrange_by="Lineup", arrange_desc=FALSE)
 
-  brx <- br_stats(cs, lx_Batter,
-                  batter_by=c("code", "Team", "Side"),
+  bbx <- c("code", "Team", "Side")
+  rbx <- c("code", "Team", "Side")
+  brx <- br_stats(cs, lx,
+                  batter_by=bbx,
                   batter_counts=batter_counting,
-                  batter_cols=c("Team", "Side", batter_cols, br_cols2),
+                  batter_cols=c(bbx, batter_cols, br_cols2),
                   batter_calculations=batter_calculations,
-                  runner_by=c("code", "Team", "Side"),
+                  runner_by=rbx,
                   runner_counts=runner_counting,
-                  runner_cols=c("Team", "Side", runner_cols),
+                  runner_cols=c(rbx, runner_cols),
                   runner_calculations=runner_calculations,
                   final_cols=brx_cols,
                   arrange_by="Side", arrange_desc=FALSE)
 
-  p1 <- p_stats(cs, lx_Pitcher, total=c(Name="Team"),
+  pb1 <- c("code", "Team", "Number", "Name")
+  pb2 <- c("code", "Team", "Number", "Name")
+  p1 <- p_stats(cs, lx, total=c(Name="Team"),
                 Team==team,
-                pitcher_by = c("code", "Team", "Number", "Name"),
+                pitcher_by = pb1,
                 pitcher_counts = cn,
                 pitcher_cols = p1_cols,
                 pitcher_calculations = pitcher_calculations,
                 arrange_by=NULL)
 
-  p2 <- p_stats(cs, lx_Pitcher, total=c(Name="Team"),
+  p2 <- p_stats(cs, lx, total=c(Name="Team"),
                 Team==vs,
-                pitcher_by = c("code", "Team", "Number", "Name"),
+                pitcher_by = pb2,
                 pitcher_counts = cn,
                 pitcher_cols = p2_cols,
                 pitcher_calculations = pitcher_calculations,
