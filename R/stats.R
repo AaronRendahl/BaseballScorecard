@@ -75,7 +75,7 @@ calc_stats <- function(data, count_vars, calculations, by, total) {
   d <- data |> summarize(Games=length(unique(code)),
                          across(all_of(count_vars), \(x) sum(x, na.rm=TRUE)),
                          .by=all_of(by))
-  if(!missing(total)) {
+  if(!missing(total) & length(total)>0 & !is.na(total)) {
     d2 <- bind_cols(Games=length(unique(data$code)),
                     as_tibble(t(colSums(d[,count_vars]))),
                     as_tibble(t(total)))
