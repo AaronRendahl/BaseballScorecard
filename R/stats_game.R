@@ -16,12 +16,13 @@ br_stats <- function(counts, lx, ..., total,
     calc_stats(runner_counts, runner_calculations, by=runner_by, total=total) |>
     select(all_of(c(runner_by, runner_cols)))
   descif <- if(arrange_desc) desc else identity
-  blank <- which(final_cols=="Blank")
+  blank <- which(final_cols=="Blank" | final_cols=="" | is.na(final_cols))
   if(length(blank)>0) {
     names(final_cols) <- ""
     names(final_cols)[blank] <- paste0("Blank", blank)
+    final_cols[blank] <- "Blank"
   }
-  full_join(b1, r1, by=intersect(runner_cols, batter_cols)) |>
+  full_join(b1, r1, by=intersect(c(runner_by, runner_cols), c(batter_by, batter_cols))) |>
     arrange(descif(.data[[arrange_by]])) |>
     mutate(Blank=NA) |>
     select(all_of(final_cols))
@@ -32,10 +33,11 @@ p_stats <- function(counts, lx, ..., total,
                     final_cols=pitcher_cols, arrange_by, arrange_desc=TRUE) {
   arrangeif <- if(is.null(arrange_by)) \(x, ...) x else arrange
   descif <- if(arrange_desc) desc else identity
-  blank <- which(final_cols=="Blank")
+  blank <- which(final_cols=="Blank" | final_cols=="" | is.na(final_cols))
   if(length(blank)>0) {
     names(final_cols) <- ""
     names(final_cols)[blank] <- paste0("Blank", blank)
+    final_cols[blank] <- "Blank"
   }
   lx <- lx |> mutate(Side = 3 - Side)
   counts |> rename(Number=Pitcher) |> left_join(lx, by=c('code', 'Side', 'Number')) |>
