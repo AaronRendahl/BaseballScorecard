@@ -43,6 +43,10 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
     total_txt <- foo$total
 
     outi <- if(foo$role=="Batter/Runner") {
+      oops <- foov |> filter(Group=="Stat" & is.na(Role))
+      if(nrow(oops) > 1) {
+        stop("Role unknown for ", paste(oops$Stat, collapse=", "))
+      }
       need_r <- foov |> filter(Role=="Runner" & Group=="Stat") |> pull("Stat") |> get_calc_vars(calcs)
       need_b <- foov |> filter(Role=="Batter" & Group=="Stat") |> pull("Stat") |> get_calc_vars(calcs)
       grp_r <- setdiff(grp, "Lineup")
@@ -55,7 +59,7 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
                runner_by=grp_r,
                runner_counts=need_r$Counts,
                runner_cols=need_r$Need,
-               runner_calculations=need_r$calculations,
+               runner_calculations=need_r$Calculations,
                final_cols=final,
                arrange_by=sort_by, arrange_desc=sort_desc)
     } else {
@@ -73,7 +77,6 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
     names(out) <- foo$name
     out
   }
-  read_idx(4)
 
   out <- NULL
   for(idx in 2:ncol(f)) out <- c(out, read_idx(idx))
