@@ -17,7 +17,9 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
     mutate(idx=1:n()) |>
     # now can split the value into isOut/Advance/Lineup/AtBatPitches/Fielders
     # if how not specified, assume it was part of the play
-    mutate(isOut=str_detect(value, pattern.out)*1L,
+    mutate(runnerOut=str_detect(value, pattern.out)*1L,
+           batterOut=0L, # because this is just runner data
+           isOut=runnerOut,
            value=str_remove(value, pattern.out),
            value=str_replace(value, "^$", "?"),
            value=str_replace(value, "^([0-9])", "P\\1")) |>
@@ -93,7 +95,9 @@ make_plays <- function(g, p,
       Base=case_when(!is.na(Base) ~ Base, !is.na(B1) ~ 1L, TRUE ~0L),
       Base=if_else(Play %in% noPlay, NA, Base)) |>
     ## add isOut
-    mutate(isOut=(Base==0L)*1L) |>
+    mutate(batterOut=(Base==0L)*1L,
+           runnerOut=0L, # because this is just batter data
+           isOut=batterOut) |>
     separate_wider_regex(Play, c(Play="[A-Za-z_]*", Fielders=".*")) |>
     mutate(Fielders=na_if(Fielders, ""))
 
@@ -127,7 +131,7 @@ make_plays <- function(g, p,
            PlayType,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance, Advance_Play, Advance_B1,
-           Base, Outs=isOut, R, LOB, Fielders)
+           Base, batterOut, runnerOut, Outs=isOut, R, LOB, Fielders)
 }
 
 add_plays <- function(gs, ...) {
