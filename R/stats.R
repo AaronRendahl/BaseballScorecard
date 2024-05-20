@@ -72,6 +72,7 @@ pitcher_cols_total <- c("Number", "Name", "Games",
 runner_cols <- c("R", "SB+", "CS+")
 
 calc_stats <- function(data, count_vars, calculations, by, total) {
+  count_vars <- setdiff(count_vars, "Games")
   d <- data |> summarize(Games=length(unique(code)),
                          across(all_of(count_vars), \(x) sum(x, na.rm=TRUE)),
                          .by=all_of(by))
