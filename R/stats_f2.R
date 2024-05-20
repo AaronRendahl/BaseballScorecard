@@ -8,6 +8,14 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
     select(code, Side, Team, Lineup) |> unnest(Lineup) |>
     select(code, Side, Team, Number, Name)
 
+  if(!missing(team)) {
+    ab <- gs |> select(code, about, when, game) |> unnest(game) |>
+      select(code, about, when, Team) |>
+      mutate(when=MDY_format(when)) |>
+      filter(Team!=team) |> rename(vs=Team)
+    lx <- left_join(lx, ab, by="code")
+  }
+
   cs <- counting_stats_all(g)$stats
 
   us <- team
@@ -31,7 +39,8 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
       list(name=glue::glue(nn), role=rr, filter=ff, total=tt, sort_by=sort_by, sort_desc=sort_desc, vars=x)
     })
 
-    grps <- c("Number", "Name", "Lineup", "Order", "Team", "Side")
+    grps <- c("Number", "Name", "Lineup", "Order", "Team", "Side",
+              "about", "when", "vs", "code")
     foov <- foo$vars |> left_join(roles, by="Stat") |>
       mutate(Group=case_when(Stat %in% grps ~ "Group", is.na(Stat) ~ "Blank", TRUE ~ "Stat"))
 
