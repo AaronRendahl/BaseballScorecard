@@ -1,3 +1,13 @@
+get_score <- function(game) {
+  score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
+    pivot_wider(names_from=Inning, values_from=R) |>
+    arrange(Side) |> select(-Side) |>
+    as.matrix()
+  score <- cbind(score, R=rowSums(score, na.rm=TRUE))
+  rownames(score) <- game$teams
+  score
+}
+
 ## helper functions
 MDY_format <- function(x) {
   out <- paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
