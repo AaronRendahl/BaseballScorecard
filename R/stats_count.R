@@ -30,9 +30,10 @@ counting_stats_all <- function(g) {
            Pitches = Balls + Strikes + Fouls) |>
     mutate(HBP=HB, BF=PA) |>
     mutate(MP=MP*onPlay, MR=MR*onPlay) |>
-    mutate("SB+"=(SB+WP+PB+DI)*(1-Outs),
-           "CS+"=(SB+WP+PB+DI)*Outs,
-           "TA"=(AX + Balk + CS + AE + AFC + APB + PO + SB + AWP + AE + SFC + DI)*(1-Outs))
+    mutate("SB+"=(SB+AWP+APB+DI+SFC+CS+PO)*(1-Outs),
+           "CS+"=(SB+AWP+APB+DI+SFC+CS+PO)*Outs,
+           "TA"=(AX + Balk + CS + AE + AFC + APB + PO + SB + AWP + AE + SFC + DI)*(1-Outs),
+           "TAX"=(AX + Balk + CS + AE + AFC + APB + PO + SB + AWP + AE + SFC + DI)*Outs)
 
   cn <- c("Pitches", "Balls", "Strikes", "Fouls", "Outs", "R", "LOB",
           setdiff(names(cs), names(p))) |> setdiff(".idx")
