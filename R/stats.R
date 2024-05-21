@@ -1,13 +1,3 @@
-get_score <- function(game) {
-  score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
-    pivot_wider(names_from=Inning, values_from=R) |>
-    arrange(Side) |> select(-Side) |>
-    as.matrix()
-  score <- cbind(score, R=rowSums(score, na.rm=TRUE))
-  rownames(score) <- game$teams
-  score
-}
-
 calc_stats <- function(data, count_vars, calculations, by, total) {
   count_vars <- setdiff(count_vars, "Games")
   d <- data |> summarize(Games=length(unique(code)),
