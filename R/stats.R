@@ -8,69 +8,6 @@ get_score <- function(game) {
   score
 }
 
-## RBI, sort of; who was at bat when run scored, which isn't quite the same thing
-# d1 |> select(Lineup, Outcome, B4) |> mutate(RBI_by=if_else(Outcome=="HR", Lineup, B4)) |>
-#   filter(!is.na(RBI_by)) |> select(Lineup=RBI_by) |>
-#   group_by(Lineup) |> summarize(RBI=n(), .groups="drop")
-
-getBA <- function(H, AB) {
-  if_else(!is.na(AB) & (AB > 1), H/AB, as.numeric(NA))
-}
-getIP <- function(x) {
-  a <- x %/% 3
-  b <- x %% 3
-  a + b/10
-}
-
-## STATS CALCULATIONS
-runner_calculations <- list()
-
-batter_calculations <- list("BA" = "getBA(H, AB)",
-                            "K/PA" = "K / PA",
-                            "OBPE" = "(H + BB + HBP + ROE) / PA",
-                            "SLG" = "TB / AB",
-                            "SLG + OBPE + notK/PA:\nBatting Sum" = "SLG + OBPE + (1 - `K/PA`)",
-                            K.="K", BBHB="BB+HBP", BIP="PA - K - BBHB", H.="H",
-                            "BIP/AB"="BIP/AB", "Hard/BIP"="Hard/BIP",
-                            "Blank" = NA) |>
-  lapply(function(x) parse(text=x))
-
-batter_cols <- c("PA", "H", "AB", "BA", "R", Blank3="Blank", Blank4="Blank", "K", "BB", "HBP", "ROE",
-                 "1B", "2B", "3B", "HR")
-batter_cols_ind <- c("Number", "Name", "Lineup", batter_cols)
-batter_cols_team <- c(Blank1="Blank", "Team", Blank2="Blank", batter_cols,
-                      "SLG", "OBPE", "K/PA")
-batter_cols_total <- c("Number", "Name", "Games", "Blank1"="Blank",
-                       batter_cols,
-                       "SLG", "OBPE", "K/PA",
-                       "SLG + OBPE + notK/PA:\nBatting Sum",
-                       Blank4="Blank",
-                       "K.", "BBHB", "BIP", "H.", "Soft", "Hard",
-                       "BIP/AB", "Hard/BIP")
-
-pitcher_calculations <- list("SR" = "Strikes/Pitches", "SR." = "SR",
-                             "IP" = "getIP(Outs)",
-                             "BBHB/BF" = "(BB + HB) / BF",
-                             "Opp. OBP" = "(H + BB + HB) / BF",
-                             "SR + notOB + notBBHB:\nPitching Sum" = "SR + (1-`Opp. OBP`) + (1-`BBHB/BF`)",
-                             K.="K", BBHB="BB+HB", BIP="BF - K - BBHB", H.="H",
-                             "Strike Rate"="SR",
-                             "BIP/Strikes"="BIP/Strikes",
-                             "Blank" = NA) |>
-  lapply(function(x) parse(text=x))
-pitcher_cols1 <- c("IP", "BF", "Strikes", "Pitches", "SR", "BlankX"="Blank", "H", "AB", "K", "BB", "HB", "ROE",
-                  "1B", "2B", "3B", "HR")
-pitcher_cols2 <- c("SR.", "Opp. OBP", "BBHB/BF", "SR + notOB + notBBHB:\nPitching Sum")
-pitcher_cols_ind <- c("Number", "Name", pitcher_cols1, pitcher_cols2)
-pitcher_cols_team <- c("Team", pitcher_cols1, pitcher_cols2)
-pitcher_cols_total <- c("Number", "Name", "Games",
-                        pitcher_cols1, pitcher_cols2,
-                        "Blank5"="Blank",
-                        "K.", "BBHB", "BIP", "H.", "Soft", "Hard",
-                        "Strike Rate", "BIP/Strikes")
-
-runner_cols <- c("R", "SB+", "CS+")
-
 calc_stats <- function(data, count_vars, calculations, by, total) {
   count_vars <- setdiff(count_vars, "Games")
   d <- data |> summarize(Games=length(unique(code)),
@@ -107,8 +44,6 @@ get_Contact <- function(p) {
     pivot_wider(names_from=Outcome, values_from=X) |>
     select(Soft, Hard) |>
     mutate(across(everything(), \(x) replace_na(x, 0L)))
-    #select(-any_of(c("NA", "idx"))) |>
-    #rename_with(\(x) paste0(x, "_contact"))
 }
 
 
