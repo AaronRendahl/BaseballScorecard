@@ -1,4 +1,3 @@
-#########
 get_calc_list <- function(calculations) {
   bb <- calculations |> filter(!is.na(Formula)) |>
     mutate(Need=Formula |>
@@ -25,19 +24,19 @@ get_calc_list <- function(calculations) {
 }
 
 get_calc_vars <- function(need, calc_list) {
-  vv <- calc_list |> unnest(Need) 
+  vv <- calc_list |> unnest(Need)
   vx1 <- vx2 <- vv |> filter(Stat %in% need)
   for(i in 1:100) {
     stopifnot(i<100)
     vx2 <- vv |> filter(Stat %in% vx2$Need & !Stat %in% vx2$Stat)
     if(nrow(vx2)==0) break;
-    vx1 <- bind_rows(vx1, vx2) 
+    vx1 <- bind_rows(vx1, vx2)
   }
   calc <- vx1 |> nest(Need=Need) |> arrange(Order)
   need2 <- calc |> unnest(Need) |> pull(Need)
   counts <- setdiff(c(need, need2), calc$Stat)
-  calcs <- calc$Formula |> setNames(calc$Stat) |> 
+  calcs <- calc$Formula |> setNames(calc$Stat) |>
     lapply(function(x) parse(text=x))
   list(Counts=counts, Need=need, Calculations=calcs)
 }
-  
+
