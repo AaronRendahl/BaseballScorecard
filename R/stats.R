@@ -1,20 +1,3 @@
-calc_stats <- function(data, count_vars, calculations, by, total) {
-  count_vars <- setdiff(count_vars, "Games")
-  d <- data |> summarize(Games=length(unique(code)),
-                         across(all_of(count_vars), \(x) sum(x, na.rm=TRUE)),
-                         .by=all_of(by))
-  if(!missing(total) & length(total)>0 & !is.na(total)) {
-    d2 <- bind_cols(Games=length(unique(data$code)),
-                    as_tibble(t(colSums(d[,count_vars]))),
-                    as_tibble(t(total)))
-    d <- bind_rows(d, d2)
-  }
-  for(n in names(calculations)) {
-    d[[n]] <- with(d, eval(calculations[[n]]))
-  }
-  d
-}
-
 get_Contact <- function(p) {
   ## do have some 1Bs with unknown Play for other teams...
   p |> select(B1, Play, Fielders) |>
