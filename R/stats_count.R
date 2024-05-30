@@ -27,7 +27,7 @@ counting_stats_all <- function(g) {
     mutate(AB = PA - SH - SF - BB - HB - CI - O) |>
     mutate(Balls = Balls + Ball,
            Strikes = Strikes + Fouls + Strike,
-           Pitches = Balls + Strikes + Fouls) |>
+           Pitches = Balls + Strikes) |>
     mutate(HBP=HB, BF=PA) |>
     mutate(MP=MP*onPlay, MR=MR*onPlay) |>
     mutate("SB+"=(SB+AWP+APB+DI+SFC+CS+PO)*(1-Outs),
