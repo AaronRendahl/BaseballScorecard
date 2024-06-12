@@ -47,7 +47,7 @@ streaks <- function(gs, team, roll_num=4, calcs,
     full_title <- sprintf("%s%s", title, roll_txt)
   }
 
-  ggplot(X.ind) + aes(idx, y) +
+  p.out <- ggplot(X.ind) + aes(idx, y) +
     facet_wrap(~Name, nrow=2) +
     geom_hline(aes(yintercept=y), data=X.indall, col=coli) +
     geom_hline(aes(yintercept=y), data=X.teamall, col=colt) +
@@ -57,4 +57,7 @@ streaks <- function(gs, team, roll_num=4, calcs,
     scale_x_continuous() +
     ggtitle(full_title, subtitle=subt) +
     ylab(var)
+
+  #list(ind=X.ind, team=X.team, ind.all=X.indall, team.all=X.teamall, plot=p.out, data1=csx1, data2=csx2)
+  p.out
 }
