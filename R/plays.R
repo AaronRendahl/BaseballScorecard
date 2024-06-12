@@ -25,9 +25,13 @@ find_runners <- function(plays, pattern.out="^X", after.play=c("P", "E", "FC")) 
            value=str_replace(value, "^([0-9])", "P\\1")) |>
     separate_wider_regex(value, c(Advance="[^0-9]*", Lineup="[0-9-.]+", Fielders=".*"), too_few="align_start") |>
     separate(Lineup, c("Lineup", "AtBatPitches"), sep="[.-]", fill = "right") |>
+    separate_wider_delim(Fielders, names=c("Fielders", "PinchRunner"), delim="#", too_few="align_start") |>
     mutate(Fielders=str_remove(Fielders, "^/") |> na_if("")) |>
+    mutate(PinchRunner=as.integer(PinchRunner)) |>
     mutate(Lineup=as.integer(Lineup)) |>
-    mutate(AtBatPitches=as.numeric(AtBatPitches))
+    mutate(AtBatPitches=as.numeric(AtBatPitches)) |>
+    group_by(AtBatID_Runner) |> mutate(BaseX=Base-lag(Base)) |> fill(PinchRunner) |>
+    mutate(Runner=if_else(!is.na(PinchRunner), PinchRunner, Runner)) |> ungroup()
 
   p1 <- plays |> select(AtBatID, Inning, Side, Lineup) |> unique()
   r1 <- rx |> filter(!is.na(Lineup)) |>
@@ -106,7 +110,7 @@ make_plays <- function(g, p,
     left_join(px |> select(AtBatID, Advance_Play=Play, Advance_B1=B1),
               by="AtBatID")
 
-  bind_rows(rx, px) |>
+  out <- bind_rows(rx, px) |>
     # if no runner, set the runner to the batter and the AtBatID to 0
     mutate(
       Runner=if_else(is.na(Runner), Batter, Runner),
@@ -127,11 +131,19 @@ make_plays <- function(g, p,
     # final selection of variables
     select(Row, Inning, Side, AtBatID, AtBatPitches,
            Lineup, AtBatID_Runner, Lineup_Runner, Order,
-           Batter, Pitcher, Runner,
+           Batter, Pitcher, Runner, PinchRunner,
            PlayType,
            Pitches, Balls, Strikes, Fouls,
            Play, B1, Advance, Advance_Play, Advance_B1,
            Base, batterOut, runnerOut, Outs=isOut, R, LOB, Fielders)
+  base_check <- out |> group_by(AtBatID_Runner) |>
+    mutate(BaseX=Base-lag(Base)) |>
+    filter(BaseX >= 0) |> ungroup()
+  if(nrow(base_check) <= 0) {
+    print(base_check)
+    stop("Bases out of order")
+  }
+  out
 }
 
 add_plays <- function(gs, ...) {
