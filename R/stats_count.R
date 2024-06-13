@@ -3,8 +3,9 @@ get_Contact <- function(p) {
   p |> select(B1, Play, Fielders) |>
     mutate(Play=if_else(B1 %in% c("BB", "HB"), B1, Play)) |>
     mutate(Play=na_if(Play, "_")) |>
-    rename(HitType="Play") |>
+    mutate(Fielders=if_else(Play %in% c("K", "Kc", "Ks"), NA, Fielders)) |>
     mutate(HitLocation=str_sub(Fielders, 1, 1) |> as.integer()) |>
+    rename(HitType="Play") |>
     mutate(HitFar=if_else(HitLocation>=7, "Out", "In"),
            HitHard=if_else(HitFar=="Out" | HitType=="L", "Hard", "Soft"),
            HitType=str_replace(HitType, "K.*", "K"),
