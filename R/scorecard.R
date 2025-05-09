@@ -474,7 +474,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                            game$lineup |> filter(Side==side), nrow=nrow)
       footer.grob <- lower(game$plays |> filter(Side==side))
     } else {
-      header.grob <- upper(header=header, team=team, team_display=team_display)
+      header.grob <- upper(header=header, side=side, team=team, team_display=team_display)
       main.grob <- mainbox(nrow=nrow)
       footer.grob <- lower()
     }
@@ -495,8 +495,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   }
 
   if(missing(game)) {
-    gf1 <- makeside(header="score", nrow=n_players[1], team=team_name)
-    gf2 <- makeside(header="about", nrow=n_players[2])
+    gf1 <- makeside(header="score", side=1, nrow=n_players[1], team=team_name)
+    gf2 <- makeside(header="about", side=2, nrow=n_players[2])
   } else {
     nr <- max(c(11, game$lineup$Lineup))
     sides <- 1:2

@@ -44,7 +44,7 @@ readgame <- function(file,
 }
 
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
-                      files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
+                      files=list.files(path=dir, pattern=gamecode, full.names=TRUE),
                       codes=str_replace(basename(files), gamecode, "\\1"),
                       save.file, resave=!missing(save.file),
                       reload=FALSE,
