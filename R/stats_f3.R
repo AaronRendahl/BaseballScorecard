@@ -9,7 +9,7 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
     select(code, Side, Team, Number, Name)
 
   if(!missing(team)) {
-    ab <- gs |> select(code, about, when, game) |> unnest(game) |>
+    ab <- g |> select(code, about, when, game) |> unnest(game) |>
       select(code, about, when, Team) |>
       mutate(when=MDY_format(when)) |>
       filter(Team!=team) |> rename(vs=Team)
