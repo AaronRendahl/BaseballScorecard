@@ -1,18 +1,13 @@
 ## ## variables needed from Game file:
 ## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
 ##
-## ## computed when read in:
-## ToBase, PitchesAtBat
+## ## also provide functions that add these
+## ToBase, Pitches
 ##
 ## ## computed in this file:
 ## X: if extra column needed for an inning
 ## PitchesSoFar: pitches so far by this pitcher
 ## LastPitch: TRUE/FALSE if is last batter for this pitcher
-
-when_format <- function(x) {
-  paste0(format(x, "%B %e, %Y, ") |> str_replace("  ", " "),
-         format(x, "%I:%M%P") |> str_remove("^0") |> str_remove("m$"))
-}
 
 scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),
@@ -21,8 +16,36 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       page_size = c(8.5, 11),
                       margins = c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
                       panels = c(1.5, 1, 0.65), # bottom, left, top
-                      n_players = 12, n_innings = c(7, 2), n_pitchers = 6) {
+                      n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
+                      when_format=MDY_format,
+                      toBase_fun=add_ToBase,
+                      Pitches_fun=add_Pitches,
+                      pattern.out="^X",
+                      start_count=c(0,0),
+                      team_display=team_name
+                      ) {
   blank <- missing(game)
+
+  if(!blank) {
+    stopifnot(is_tibble(game) && nrow(game)==1)
+    game <- as.list(game)
+    game$teams <- game$game[[1]]$Team
+    game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
+    game$lineup <- game$game[[1]] |> select(Side, Lineup) |> unnest(Lineup)
+    game$game <- NULL
+    ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
+    ## Pitches: total pitches during at-bat
+    game$plays <- game$plays |> toBase_fun() |> Pitches_fun()
+    fixB <- function(x) {
+      x |> str_remove(pattern.out) |>
+        str_remove("^\\?") |>
+        str_replace("^([A-Z]+).*$", "\\1")
+    }
+    game$plays$B2 <- fixB(game$plays$B2)
+    game$plays$B3 <- fixB(game$plays$B3)
+    game$plays$B4 <- fixB(game$plays$B4)
+  }
+
   pages <- match.arg(pages)
 
   if(length(n_players) == 1) n_players <- rep(n_players, 2)
@@ -84,10 +107,19 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       pointsGrob(x = xx, y=rep(yy, count[3]), pch = 19,
                  size = unit(2, "pt"))
     } else { NULL }
+    countX_start <- if(any(start_count > 0)) {
+      X <- rep(FALSE, 5)
+      X[seq_len(start_count[1])] <- TRUE
+      X[seq_len(start_count[2])+3] <- TRUE
+      segmentsGrob(x0=xs[X] + pitchsize*0.1,
+                   y0=ys[X] - pitchsize*0.5,
+                   x1=xs[X] + pitchsize*0.9,
+                   y1=ys[X] - pitchsize*0.5)
+    } else { NULL }
     countX <- if(any(count[1:2] > 0)) {
       X <- rep(FALSE, 5)
-      X[seq_len(count[1])  ] <- TRUE
-      X[seq_len(count[2])+3] <- TRUE
+      X[seq_len(count[1])+start_count[1]] <- TRUE
+      X[seq_len(count[2])+3+start_count[2]] <- TRUE
       segmentsGrob(x0=xs[X],
                    y0=ys[X] - pitchsize,
                    x1=xs[X] + pitchsize,
@@ -153,7 +185,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
             circleGrob(x = xx, y = yy, r = xx * 0.85))
     } else { NULL }
     play <- if(is.na(play)) { NULL } else {
-      play <- str_replace(play, "-", "")
+      play <- str_replace_all(play, "-", "")
       if(ToBase == 0) {
         textGrob(play, basex, unit(1, "npc") - basey)
       } else {
@@ -166,8 +198,6 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       }
     }
     bybase <- if(missing(bybase)) { NULL } else {
-      bybase[bybase == "?"] <- ""
-      bybase <- str_remove(bybase, "-.*")
       textGrobNA <- function(label, x, y, ...) {
         if(is.na(label)) return(NULL)
         textGrob(label, x, y, ...)
@@ -194,7 +224,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                    gp = gpar(col=pitchslashcolor, lwd=0.25))
     }
     gTree(children=gList(bases, lines, fill, action,
-                         pitchboxes, countX, fouls,
+                         pitchboxes, countX_start, countX, fouls,
                          play, out, bybase,
                          sh, pitchnum, box))
   }
@@ -235,8 +265,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       pitch_count <- function(x) {
         x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
         bind_rows(
-          x |> group_by(Inning, Pitcher) |> summarize(N = sum(PitchesAtBat), .groups = "drop"),
-          x |> group_by(Pitcher) |> summarize(N = sum(PitchesAtBat), .groups = "drop") |> mutate(Inning = 0)
+          x |> group_by(Inning, Pitcher) |> summarize(N = sum(Pitches), .groups = "drop"),
+          x |> group_by(Pitcher) |> summarize(N = sum(Pitches), .groups = "drop") |> mutate(Inning = 0)
         ) |> mutate(Order = as.integer(Pitcher))
       }
       x1 <- pitch_count(game) |> mutate(N = as.character(N))
@@ -245,8 +275,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       ins <- seq_len(max(x1$Inning))
       x3 <- tibble(Inning = c(-1, 0, ins), N = c("P", "Total", as.character(ins)), Order = 0)
       x <- bind_rows(x1, x2, x3) |>
-        mutate(x = (Inning + 2) / 16,
-               y = 1 - (Order + 0.5) / 7)
+        mutate(x = (Inning + 2) / 24,
+               y = 1 - (Order + 0.5) / max(c(7, Order+1)))
       gf <- frameGrob(grid.layout())
       gf <- placeGrob(gf,
                       textGrob(paste(x$N), x = unit(x$x,"npc"), y = unit(x$y, "npc"),
@@ -301,8 +331,10 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
 
   upper <- function(game, side,
                     team = if(!missing(game)) game$teams[side] else NA,
+                    team_display,
                     header = c("none", "about", "score")) {
     header <- match.arg(header)
+    if(is.na(team_display)) team_display <- team
     dt <- if(header == "about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
@@ -328,7 +360,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       xs <- (1 - xw) + xw / np1 * (0:np1)
       a3 <- segmentsGrob(x0 = xs, x1 = xs, y0 = 0.3, y1 = 0.8, gp = gpar(lwd = 0.25))
       ys <- c(0.3, 0.55, 0.8)
-      a4 <- segmentsGrob(x0 = 0.65, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
+      a4 <- segmentsGrob(x0 = 0.6, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
         score <- get_score(game) |> as.data.frame()
@@ -352,7 +384,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       side == 2 ~ "@ ",
                       side == 1 ~ "v. ",
                       TRUE ~ "")
-      teamtext <- textGrob(paste0(vs, team),
+      teamtext <- textGrob(paste0(vs, team_display),
                            x = unit(1 * haslogo, "snpc"),
                            y = 0.55,
                            just=c("left", "center"),
@@ -388,20 +420,26 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       # make the graphics...
       get_X <- function(Lineup, Inning) {
         tibble(Lineup=Lineup, Inning=Inning) |>
+          ## this part tries to notice if anyone is out of order
+          mutate(diff=(Lineup-lag(Lineup)), gap=diff%%max(Lineup),
+                 .by="Inning") |>
+          mutate(Xorder=cumsum(!is.na(diff) & (gap>2 & diff<0))) |>
+          select(-diff, -gap) |>
+          ## this part looks for if they batted around
           group_by(Lineup, Inning) |> mutate(X=1:n()) |>
           group_by(Inning) |> mutate(X=cummax(X) - 1) |>
           nest() |> ungroup() |>
           mutate(X3=purrr::map_dbl(data, ~max(.$X)), X4=lag(cumsum(X3), default = 0)) |>
-          unnest(data) |> mutate(X=X+X4) |> select(-X3, -X4) |>
+          unnest(data) |> mutate(X=X+X4+Xorder) |> select(-X3, -X4, -Xorder) |>
           ungroup() |> pull(X)
       }
       d <- d |> mutate(X=get_X(Lineup, Inning)) |>
-        group_by(Pitcher, Inning) |> mutate(PitchesSoFar=cumsum(PitchesAtBat), LastPitch=1:n()==n()) |>
+        group_by(Pitcher, Inning) |> mutate(PitchesSoFar=cumsum(Pitches), LastPitch=1:n()==n()) |>
         group_by(Inning) |> mutate(top=(1:n()==1)) |>
         rowwise() |>
         mutate(box=list(
           makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
-                  pitchcount=c(PitchesAtBat, PitchesSoFar), LastPitch=LastPitch,
+                  pitchcount=c(Pitches, PitchesSoFar), LastPitch=LastPitch,
                   play=Play, bybase=c(B1, B2, B3, B4),
                   out=Out, basesize=basesize, top=top)
         )) |> ungroup()
@@ -429,14 +467,14 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     gf
   }
 
-  makeside <- function(game, side, team=NA, header, nrow) {
+  makeside <- function(game, side, team=NA, header, nrow, team_display=team) {
     if(!missing(game)) {
-      header.grob <- upper(game, side, header=header)
+      header.grob <- upper(game, side, header=header, team_display=team_display)
       main.grob <- mainbox(game$plays |> filter(Side==side),
                            game$lineup |> filter(Side==side), nrow=nrow)
       footer.grob <- lower(game$plays |> filter(Side==side))
     } else {
-      header.grob <- upper(header=header, team=team)
+      header.grob <- upper(header=header, side=side, team=team, team_display=team_display)
       main.grob <- mainbox(nrow=nrow)
       footer.grob <- lower()
     }
@@ -457,13 +495,13 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   }
 
   if(missing(game)) {
-    gf1 <- makeside(header="score", nrow=n_players[1], team=team_name)
-    gf2 <- makeside(header="about", nrow=n_players[2])
+    gf1 <- makeside(header="score", side=1, nrow=n_players[1], team=team_name)
+    gf2 <- makeside(header="about", side=2, nrow=n_players[2])
   } else {
     nr <- max(c(11, game$lineup$Lineup))
     sides <- 1:2
     if(team_name==game$teams[2]) sides <- rev(sides)
-    gf1 <- makeside(game, sides[1], nrow=nr, header="score")
+    gf1 <- makeside(game, sides[1], nrow=nr, header="score", team_display=team_display)
     gf2 <- makeside(game, sides[2], nrow=nr, header="about")
   }
 

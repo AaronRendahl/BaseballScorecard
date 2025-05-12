@@ -99,22 +99,27 @@ statsToExcel <- function(out, filename) {
 }
 
 toGoogle <- function(file, newfile=stringr::str_remove(basename(file), "\\.xlsx$"),
-                     dir, subdir) {
-  if(!missing(subdir)) { dir <- file.path(dir, subdir) }
+                     dir, subdir, google_id) {
+  if(!missing(google_id)) {
+    atGoogle <- google_id
+  } else {
+    if(!missing(subdir)) { dir <- file.path(dir, subdir) }
+    atGoogle <- file.path(dir, newfile)
+  }
   if(str_detect(file, "xlsx$")) {
     dimxl <- function(path, sheet) {
       x <- readxl::read_excel(path=path, sheet=sheet, col_names=FALSE, .name_repair="minimal")
       dim(x) |> setNames(c("rows", "cols"))
     }
-    out <- drive_put(file, file.path(dir, newfile), type="spreadsheet")
+    out <- googledrive::drive_put(file, atGoogle, type="spreadsheet", name=newfile)
     dims <- tibble(sheet=readxl::excel_sheets(file)) |>
       mutate(purrr::map_dfr(sheet, dimxl, path=file))
     for(i in 1:nrow(dims)) {
-      sheet_resize(out, sheet=dims$sheet[i],
+      googlesheets4::sheet_resize(out, sheet=dims$sheet[i],
                    nrow=dims$rows[i]+1, ncol=dims$cols[i]+1, exact=TRUE)
     }
   } else {
-    out <- drive_put(file, file.path(dir, newfile))
+    out <- googledrive::drive_put(file, atGoogle, name=newfile)
   }
   out
 }

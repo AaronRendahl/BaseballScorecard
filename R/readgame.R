@@ -1,7 +1,8 @@
-
 readgame <- function(file,
                      rosters = tibble(Team=character(), Number=numeric(), Name=character()),
-                     parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m"))) {
+                     parse_time = \(x) lubridate::mdy_hm(stringr::str_replace(x, "([ap])$", "\\1m")),
+                     cleanplays_fun=cleanplays,
+                     plays=TRUE, ...) {
   message(file)
   ss <- readxl::excel_sheets(file)
   tmp <- readxl::read_excel(file, "Lineup", n_max = 1, col_names = FALSE, col_types="text", .name_repair="minimal")
@@ -19,35 +20,38 @@ readgame <- function(file,
     arrange(Side, Lineup) |>
     nest(Lineup=c(Lineup, Number, Name)) |>
     select(Side, Team, Lineup)
-  #game <- lineups |> mutate(Plays = map2(Team, Lineup, \(team, lineup) {
-  #  readxl::read_excel(file, sheet = team) |> makedata() |> left_join(lineup, by="Lineup") |>
-  #  select(Row, Inning, Lineup, Batter=Number, Pitcher, everything())
   game <- lineups |> mutate(Plays = map(Team, \(team) {
-        readxl::read_excel(file, sheet = team) |> makedata() |>
-      select(Row, Inning, Lineup, Pitcher, everything())
+    readxl::read_excel(file, sheet = team) |>
+      cleanplays_fun() |>
+      mutate(Row = 1:n(), .before=1)
   }))
+  ## add Batter from the Lineup, if needed
+  if(! "Batter" %in% names(game$Plays[[1]])) {
+    game$Plays[[1]] <- game$Plays[[1]] |>
+      left_join(game$Lineup[[1]] |> select(Lineup, Batter=Number), by="Lineup") |>
+      relocate(Batter, .after="Inning")
+  }
+  if(! "Batter" %in% names(game$Plays[[2]])) {
+    game$Plays[[2]] <- game$Plays[[2]] |>
+      left_join(game$Lineup[[2]] |> select(Lineup, Batter=Number), by="Lineup") |>
+      relocate(Batter, .after="Inning")
+  }
   out <- tibble(when=when, about=about, game=list(game))
+  if(plays) {
+    out <- add_plays(out, ...)
+  }
   out
 }
 
-prep_game <- function(game) {
-  stopifnot(is_tibble(game) && nrow(game)==1)
-  game <- as.list(game)
-  game$teams <- game$game[[1]]$Team
-  game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
-  game$lineup <- game$game[[1]] |> select(Side, Lineup) |> unnest(Lineup)
-  game$game <- NULL
-  game
-}
-
 readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
-                      files=list.files(path="game_data", pattern=gamecode, full.names=TRUE),
+                      files=list.files(path=dir, pattern=gamecode, full.names=TRUE),
                       codes=str_replace(basename(files), gamecode, "\\1"),
                       save.file, resave=!missing(save.file),
+                      reload=FALSE,
                       ...) {
 
   gs <- tibble(code=codes, datafile=files) |> mutate(mtime.now=file.mtime(datafile))
-  if(!missing(save.file) && file.exists(save.file)) {
+  if(!reload && !missing(save.file) && file.exists(save.file)) {
     gs <- full_join(gs, read_rds(save.file), by=c("code", "datafile"))
   }
   gs <- gs |> bind_rows(tibble(mtime=as.POSIXct(c()))) |>
@@ -60,7 +64,6 @@ readgames <- function(dir=".", gamecode="^Game_([0-9a-z]+)\\.xlsx$",
   gs <- gs |> filter(status %in% c("new", "update")) |> select(code, datafile) |>
     mutate(mtime=file.mtime(datafile)) |>
     mutate(map_dfr(datafile, \(x) readgame(x, ...))) |>
-    game_add_stats() |>
     bind_rows(filter(gs, status=="ok")) |>
     select(-mtime.now, -status) |>
     arrange(code)

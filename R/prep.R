@@ -3,13 +3,15 @@ tmp1 <- tibble(name=c("IP",
                       "BA", "Opp. OBP", "OBPE", "SLG",
                       "SLG + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum",
                       "Contact/AB", "Hard/AB", "Hard/Contact",
-                      "SR", "SR.", "K/PA", "BBHB/BF"),
-               numFmt=c("0.0", rep("0.000", 9), rep("0%", 4)))
+                      "SR", "SR.", "K/PA", "BBHB/BF",
+                      "BIP/AB", "Hard/BIP",
+                      "Strike Rate", "BIP/Strikes"),
+               numFmt=c("0.0", rep("0.000", 9), rep("0%", 8)))
 
 tmp2 <- bind_rows(tibble(name=c("Lineup", "Number", "Name", "BA", "OBP", "SLG"), width=8),
                   tibble(name=c("SR", "SR.", "K/PA"), width=7),
                   tibble(name=c("Opp. OBP", "BBHB/BF"), width=9),
-                  tibble(name=c("Contact", "Contact/AB", "Hard/AB", "Hard/Contact"), width=c(8, 10, 10, 12)),
+                  tibble(name=c("BIP", "BIP/AB", "Hard/BIP", "Strike Rate", "BIP/Strike"), width=c(7, 8, 8, 10, 10)),
                   tibble(name=c("SLG + OBPE + notK/PA:\nBatting Sum", "SR + notOB + notBBHB:\nPitching Sum"), width=20),
                   tibble(name=c("about", "when", "vs"), width=c(10, 20,15)))
 
@@ -28,8 +30,6 @@ prepDataList <- function(x, format=fmt) {
       x
     }
     xi <- as_tibble(xi, .name_repair=unique_Blank)
-    ## remove Outs from output now that have IP
-    xi$Outs <- NULL
     ## add scorecard links as hyperlinks to "when" column
     xi <- xi |> rename(any_of(c(.hyperlink.when="scorecard_link")))
     ## Determine which columns are all missing. Specifically should be these:
