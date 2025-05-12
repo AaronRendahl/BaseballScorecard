@@ -185,7 +185,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
             circleGrob(x = xx, y = yy, r = xx * 0.85))
     } else { NULL }
     play <- if(is.na(play)) { NULL } else {
-      play <- str_replace(play, "-", "")
+      play <- str_replace_all(play, "-", "")
       if(ToBase == 0) {
         textGrob(play, basex, unit(1, "npc") - basey)
       } else {
