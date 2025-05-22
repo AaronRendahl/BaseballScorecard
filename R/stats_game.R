@@ -3,7 +3,7 @@ add_stats <- function(gs, ...) {
   gs
 }
 
-game_stats <- function(g, team, stats_file, calculations, roles) {
+game_stats <- function(g, team, stats_file, calculations, roles, key=BaseballScorecard::codes) {
   stopifnot(is_tibble(g) & nrow(g)==1)
   teams <- g |> select(code, game) |> unnest(game) |> pull(Team)
   stopifnot(team %in% teams)
@@ -18,6 +18,6 @@ game_stats <- function(g, team, stats_file, calculations, roles) {
     header <- list(header, link)
   }
 
-  out <- make_stats_from_file(g, header, stats_file, calculations, roles, team, vs)
+  out <- make_stats_from_file(g, header, stats_file, calculations, roles, team, vs, key)
   out
 }

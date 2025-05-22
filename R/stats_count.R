@@ -21,10 +21,10 @@ get_Contact <- function(p) {
 }
 
 
-counting_stats_all <- function(g) {
+counting_stats_all <- function(g, key=BaseballScorecard::codes) {
   p <- g |> select(code, plays) |> unnest(plays)
 
-  cs <- counting_stats(p) |> bind_cols(get_Contact(p)) |>
+  cs <- counting_stats(p, key) |> bind_cols(get_Contact(p)) |>
     mutate(AB = PA - SH - SF - BB - HB - CI - O) |>
     mutate(Balls = Balls + Ball,
            Strikes = Strikes + Fouls + Strike,

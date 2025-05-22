@@ -1,4 +1,4 @@
-make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
+make_stats_from_file <- function(g, header, file, calcs, roles, team, vs, key=BaseballScorecard::codes) {
 
   f <- file |>
     mutate(across(where(is.character), \(x) str_replace(x, "\\\\n", "\n")))
@@ -16,7 +16,7 @@ make_stats_from_file <- function(g, header, file, calcs, roles, team, vs) {
     lx <- left_join(lx, ab, by="code")
   }
 
-  cs <- counting_stats_all(g)$stats
+  cs <- counting_stats_all(g, key)$stats
 
   us <- team
   them <- vs
