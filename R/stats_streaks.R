@@ -47,6 +47,7 @@ streaks <- function(gs, team, roll_num=4, calcs,
     full_title <- sprintf("%s%s", title, roll_txt)
   }
 
+  X.indall <- semi_join(X.indall, X.ind, by="Name")
   p.out <- ggplot(X.ind) + aes(idx, y) +
     facet_wrap(~Name, nrow=2) +
     geom_hline(aes(yintercept=y), data=X.indall, col=coli) +
