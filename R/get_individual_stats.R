@@ -1,6 +1,7 @@
 get_individual_stats <- function(g, stats, team,
                                  role = c("Batter/Runner", "Pitcher"),
-                                 calcs, roles, key=BaseballScorecard::codes) {
+                                 calcs, roles, key=BaseballScorecard::codes,
+                                 grp_by = c("Number", "Name")) {
   role <- match.arg(role)
   lx <- g |> select(code, game) |> unnest(game) |>
     select(code, Side, Team, Lineup) |> unnest(Lineup) |>
@@ -13,8 +14,6 @@ get_individual_stats <- function(g, stats, team,
   lx <- left_join(lx, ab, by="code")
 
   cs <- counting_stats_all(g, key)$stats
-
-  grp_by <- c("Number", "Name")
 
   grps <- c("Number", "Name", "Lineup", "Order", "Team", "Side", "about", "when", "vs", "code")
   foov <- tibble(Stat=c(grp_by, stats)) |> mutate(Order=1:n(), .before=1) |>
