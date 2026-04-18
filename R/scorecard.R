@@ -242,7 +242,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
           s2 <- textGrob(lineup[["Name"]][i], x = 0.25, y = 0.85, just=c("left", "top"))
         }
         ss <- gTree(children = gList(s1, s2))
-        gf <- placeGrob(gf, row = i, col = 1, grob = ss)
+        gf <- placeGrob(gf, row = lineup$Lineup[i], col = 1, grob = ss)
       }
     }
     for(i in 1:players) {
