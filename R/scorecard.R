@@ -247,11 +247,16 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     }
     for(i in 1:players) {
       s1 <- segmentsGrob(x0 = 0, x1 = 1, y0 = 1, y1 = 1, gp = gpar(lwd=0.5))
-      s2 <- textGrob(i, x = 0.1, y = 0.85, just = c("center", "top"),
+      s2 <- textGrob(i, x = 0, y = 0.85, just = c("left", "top"),
                      gp = gpar(fontsize = lineupnumsize))
-      s3 <- textGrob("#", x = 0.1, y = 0.1, just = c("center", "bottom"),
+      s3a <- textGrob("#", x = 0.15, y = 0.8, just = c("center", "center"),
                      gp = gpar(fontsize = numbersize, col = numbercolor))
-      ss <- gTree(children = gList(s1, s2, s3))
+      s3b <- textGrob("#", x = 0.15, y = 0.5, just = c("center", "center"),
+                     gp = gpar(fontsize = numbersize, col = numbercolor))
+      s3c <- textGrob("#", x = 0.15, y = 0.2, just = c("center", "center"),
+                     gp = gpar(fontsize = numbersize, col = numbercolor))
+      ss <- gTree(children = gList(s1, s2, s3a, s3b, s3c))
+      ## FIX 1
       gf <- placeGrob(gf, row = i, col = 1, grob = ss)
     }
     gf <- placeGrob(gf, row = players, col = 1,
@@ -285,7 +290,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       return(gf)
     } else {
       heights2 <- c(0.2, rep(1 / n_pitchers, n_pitchers), 0.2)
-      leftcols <- panel.left * c(0.5, 0.4, 0.1)
+      #leftcols <- panel.left * c(0.5, 0.4, 0.1)
+      leftcols <- panel.left * c(1.1, 0.3, 0.1)
       nleftcols <- length(leftcols)
       npinnings <- ninnings
       pwidth <- 1 / ncol / 2 * npinnings
@@ -350,17 +356,17 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                  gp = gpar(fontsize=14))
       }
     } else if(header == "score"){
-      np1 <- ninnings + 1
+      np1 <- ninnings + 2
       xw <- 0.25 / 7 * np1
 
       xx <- (1 - xw) + xw / np1 * (1:np1) - xw / (2 * np1)
       yy <- c(0.675, 0.425)
-      a2 <- textGrob(c( 1:ninnings, "R"), x = xx, y = 0.85, just = "bottom",
+      a2 <- textGrob(c( 1:ninnings, "", "R"), x = xx, y = 0.85, just = "bottom",
                      gp = gpar(fontsize = inningtextsize))
       xs <- (1 - xw) + xw / np1 * (0:np1)
       a3 <- segmentsGrob(x0 = xs, x1 = xs, y0 = 0.3, y1 = 0.8, gp = gpar(lwd = 0.25))
       ys <- c(0.3, 0.55, 0.8)
-      a4 <- segmentsGrob(x0 = 0.6, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
+      a4 <- segmentsGrob(x0 = 0.45, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
         score <- get_score(game) |> as.data.frame()
@@ -384,13 +390,16 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       side == 2 ~ "@ ",
                       side == 1 ~ "v. ",
                       TRUE ~ "")
+      rr <- dim(logos[[team]])[2]/dim(logos[[team]])[1]
+      if(length(rr)==0 || is.na(rr)) rr <- 1
       teamtext <- textGrob(paste0(vs, team_display),
-                           x = unit(1 * haslogo, "snpc"),
+                           #x = unit(1 * haslogo, "snpc"),
+                           x= unit(0.8 * rr * haslogo, "snpc"),
                            y = 0.55,
                            just=c("left", "center"),
                            gp = gpar(fontsize = teamnamesize))
       if(haslogo) {
-        teamlogo <- rasterGrob(logos[[team]], x = 0, y = 1, height = 0.9,
+        teamlogo <- rasterGrob(logos[[team]], x = 0, y = 1, height = 0.8,
                                just = c("left", "top"))
         gTree(children = gList(teamlogo, teamtext))
       } else {
