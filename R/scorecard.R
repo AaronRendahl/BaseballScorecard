@@ -46,159 +46,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  teamnamesize   <- 14
-  footertextsize <-  8; footertextcolor <- "gray20"
-  headertextsize <- 10
   inningtextsize <-  9
-  leftlabelsize  <-  9; leftlabelcolor  <- "gray50"
-
-  lower <- function(game) {
-    if(!missing(game)) {
-      pitch_count <- function(x) {
-        x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
-        bind_rows(
-          x |> group_by(Inning, Pitcher) |> summarize(N = sum(Pitches), .groups = "drop"),
-          x |> group_by(Pitcher) |> summarize(N = sum(Pitches), .groups = "drop") |> mutate(Inning = 0)
-        ) |> mutate(Order = as.integer(Pitcher))
-      }
-      x1 <- pitch_count(game) |> mutate(N = as.character(N))
-      x2 <- filter(x1, Inning==0) |> mutate(N = paste0("#", levels(Pitcher)),
-                                             Inning = -1, Pitcher = NA)
-      ins <- seq_len(max(x1$Inning))
-      x3 <- tibble(Inning = c(-1, 0, ins), N = c("P", "Total", as.character(ins)), Order = 0)
-      x <- bind_rows(x1, x2, x3) |>
-        mutate(x = (Inning + 2) / 24,
-               y = 1 - (Order + 0.5) / max(c(7, Order+1)))
-      gf <- frameGrob(grid.layout())
-      gf <- placeGrob(gf,
-                      textGrob(paste(x$N), x = unit(x$x,"npc"), y = unit(x$y, "npc"),
-                               just = "right"),
-                      row = 1, col = 1)
-      return(gf)
-    } else {
-      heights2 <- c(0.2, rep(1 / n_pitchers, n_pitchers), 0.2)
-      #leftcols <- panel.left * c(0.5, 0.4, 0.1)
-      leftcols <- panel.left * c(1.1, 0.3, 0.1)
-      nleftcols <- length(leftcols)
-      npinnings <- ninnings
-      pwidth <- 1 / ncol / 2 * npinnings
-      widths2 <- c(leftcols, rep(main.width * pwidth / npinnings, npinnings), main.width * (1 - pwidth))
-      lx2 <- grid.layout(ncol = length(widths2),
-                         nrow = length(heights2),
-                         heights = heights2,
-                         widths = widths2)
-      gf2 <- frameGrob(layout = lx2)
-      gf2 <- placeGrob(gf2,
-                       textGrob("Pitcher", x = 0, y = unit(3, "pt"), just = c("left", "bottom"),
-                                gp=gpar(fontsize = inningtextsize)),
-                       row = 1, col = 1)
-      gf2 <- placeGrob(gf2,
-                       textGrob("Total", x = 0.5, y = unit(3, "pt"), just = "bottom",
-                                gp=gpar(fontsize = inningtextsize)),
-                       row = 1, col = 2)
-      for(i in 1:n_pitchers) {
-        gf2 <- placeGrob(gf2,
-                         textGrob("#", x = 0.05, just = "left",
-                                  gp = gpar(fontsize = leftlabelsize, col = leftlabelcolor)),
-                         row = i + 1, col = 1)
-        box <- rectGrob(gp = gpar(lwd = 0.25))
-        gf2 <- placeGrob(gf2, box, row = i + 1, col=1)
-        gf2 <- placeGrob(gf2, box, row = i + 1, col=2)
-      }
-      for(i in 1:npinnings) for(j in 1:n_pitchers) {
-        box <- rectGrob(gp = gpar(lwd = 0.25))
-        gf2 <- placeGrob(gf2, box, row = j + 1, col = nleftcols + i)
-      }
-      for(i in 1:npinnings) {
-        gf2 <- placeGrob(gf2, row = 1, col = nleftcols + i,
-                         grob=textGrob(i, y = unit(3, "pt"), just = "bottom",
-                                       gp = gpar(fontsize = inningtextsize)))
-      }
-      xx1 <- textGrob(footer_text,
-                      x = 0, y = 0.9,  just = c("left", "top"),
-                      gp = gpar(fontsize = footertextsize, col = footertextcolor))
-      gf2 <- placeGrob(gf2, xx1, row = length(heights2), col = 1)
-      return(gf2)
-    }
-  }
-
-  upper <- function(game, side,
-                    name_style="Name",
-                    team = if(!missing(game)) game$teams[[name_style]][side] else NA,
-                    logo = if(!missing(game)) game$teams$Logo[[side]] else NULL,
-                    header = c("none", "about", "score")) {
-    header <- match.arg(header)
-    dt <- if(header == "about") {
-      if(missing(game)) {
-        textGrob("Game Date/Time:",
-                 x = 0.5,
-                 y = unit(1, "npc") - unit(margin.top, "inches"),
-                 just = c("left", "top"),
-                 gp = gpar(fontsize = headertextsize))
-      } else {
-        textGrob(sprintf("%s: %s", game$about, when_format(game$when)),
-                 x = 0.95,
-                 y = 0.55,
-                 just = c("right", "center"),
-                 gp = gpar(fontsize=14))
-      }
-    } else if(header == "score"){
-      np1 <- ninnings + 2
-      xw <- 0.25 / 7 * np1
-
-      xx <- (1 - xw) + xw / np1 * (1:np1) - xw / (2 * np1)
-      yy <- c(0.675, 0.425)
-      a2 <- textGrob(c( 1:ninnings, "", "R"), x = xx, y = 0.85, just = "bottom",
-                     gp = gpar(fontsize = inningtextsize))
-      xs <- (1 - xw) + xw / np1 * (0:np1)
-      a3 <- segmentsGrob(x0 = xs, x1 = xs, y0 = 0.3, y1 = 0.8, gp = gpar(lwd = 0.25))
-      ys <- c(0.3, 0.55, 0.8)
-      a4 <- segmentsGrob(x0 = 0.45, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
-      out <- gList(a2, a3, a4)
-      if(!missing(game)) {
-        score <- get_score(game, "Short") |> as.data.frame()
-        names(score)[ncol(score)] <- ninnings + 1
-        teams <- rownames(score)
-        score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
-          mutate(inning = as.integer(inning)) |>
-          mutate(xx = xx[inning], yy=yy[team]) |>
-          mutate(value = replace_na(as.character(value), "-"))
-        out2 <- textGrob(score$value, x = xx[score$inning], y = yy[score$team],
-                         gp = gpar(fontsize = inningtextsize))
-        out3 <- textGrob(teams, x = unit(1 - xw, "npc") - unit(6, "pt"), y = yy, just="right",
-                         gp = gpar(fontsize = inningtextsize))
-        out <- gList(out, out2, out3)
-      }
-      out
-    }
-    name <- if(!is.na(team)) {
-      haslogo <- !is.null(logo)
-      vs <- case_when(header == "score" ~ "",
-                      side == 2 ~ "@ ",
-                      side == 1 ~ "v. ",
-                      TRUE ~ "")
-      rr <- if(haslogo) dim(logo)[2]/dim(logo)[1] else 1
-      teamtext <- textGrob(paste0(vs, team),
-                           x = unit(0.8 * rr, "snpc"),
-                           y = 0.55,
-                           just=c("left", "center"),
-                           gp = gpar(fontsize = teamnamesize))
-      if(haslogo) {
-        teamlogo <- rasterGrob(logo, x = 0, y = 1, height = 0.8,
-                               just = c("left", "top"))
-        gTree(children = gList(teamlogo, teamtext))
-      } else {
-        teamtext
-      }
-    } else if(is.na(team)) {
-      textGrob("@\nvs.",
-               x = 0,
-               y = unit(1, "npc") - unit(margin.top, "inches"),
-               just = c("left", "top"),
-               gp = gpar(fontsize = headertextsize))
-    }
-    gTree(children = gList(dt, name))
-  }
 
   boxes <- function(d, nrow) {
     pitchsize <- if(blank) 0.12 else 0.10
@@ -265,14 +113,35 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
 
   makeside <- function(game, side, team=NA, header, nrow, name_style="Name") {
     if(!missing(game)) {
-      header.grob <- upper(game, side, header=header, name_style=name_style)
+      header.grob <- upper(game, side,
+                           header = header, name_style = name_style,
+                           margin.top = margin.top,
+                           ninnings = ninnings,
+                           inningtextsize = inningtextsize,
+                           when_format = when_format)
       main.grob <- mainbox(game$plays |> filter(Side==side),
                            game$lineup |> filter(Side==side), nrow=nrow)
-      footer.grob <- lower(game$plays |> filter(Side==side))
+      footer.grob <- lower(game$plays |> filter(Side==side),
+                           n_pitchers = n_pitchers,
+                           n_innings = c(ninnings, nextra),
+                           panel.left = panel.left,
+                           main.width = main.width,
+                           inningtextsize = inningtextsize,
+                           footer_text = footer_text)
     } else {
-      header.grob <- upper(header=header, side=side, team=team, name_style=name_style)
+      header.grob <- upper(header = header, side = side,
+                           team = team, name_style = name_style,
+                           margin.top = margin.top,
+                           ninnings = ninnings,
+                           inningtextsize = inningtextsize,
+                           when_format = when_format)
       main.grob <- mainbox(nrow=nrow)
-      footer.grob <- lower()
+      footer.grob <- lower(n_pitchers = n_pitchers,
+                           n_innings = c(ninnings, nextra),
+                           panel.left = panel.left,
+                           main.width = main.width,
+                           inningtextsize = inningtextsize,
+                           footer_text = footer_text)
     }
 
     ## do final layout
