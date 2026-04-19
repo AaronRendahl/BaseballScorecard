@@ -1,13 +1,5 @@
 ## ## variables needed from Game file:
 ## Balls, Strikes, Fouls, Play, Out, B1, B2, B3, B4
-##
-## ## also provide functions that add these
-## ToBase, Pitches
-##
-## ## computed in this file:
-## X: if extra column needed for an inning
-## PitchesSoFar: pitches so far by this pitcher
-## LastPitch: TRUE/FALSE if is last batter for this pitcher
 
 scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),

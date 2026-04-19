@@ -1,3 +1,8 @@
+## ## computed in this file:
+## X: if extra column needed for an inning
+## PitchesSoFar: pitches so far by this pitcher
+## LastPitch: TRUE/FALSE if is last batter for this pitcher
+
 boxes <- function(d = NULL,
                   blank = is.null(d),
                   nrow = 9,
