@@ -46,9 +46,9 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  pitchsize       <- if(missing(game)) 0.12 else 0.10
-  pitchboxcolor   <- "gray30"
-  pitchslashcolor <- "gray30"
+  #pitchsize       <- if(missing(game)) 0.12 else 0.10
+  #pitchboxcolor   <- "gray30"
+  #pitchslashcolor <- "gray30"
 
 
   teamnamesize   <- 14
@@ -60,10 +60,17 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   leftlabelsize  <-  9; leftlabelcolor  <- "gray50"
   pitchcountsize <-  8
 
-  basedotcolor <- "gray50"
+  #basedotcolor <- "gray50"
 
   makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
-                      out=NA, bybase, play=NA, basesize, top=FALSE) {
+                      out=NA, bybase, play=NA,
+                      basesize=0.13,
+                      pitchsize=if(blank) 0.12 else 0.10,
+                      blank=TRUE, top=FALSE,
+                      basedotcolor="gray50",
+                      pitchslashcolor="gray30",
+                      pitchboxcolor="gray30",
+                      count0=c(0,0)) {
     basesize  <- unit(basesize,  "inches")
     pitchsize <- unit(pitchsize, "inches")
     basex <- unit(0.55, "npc")
@@ -83,10 +90,10 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       pointsGrob(x = xx, y=rep(yy, count[3]), pch = 19,
                  size = unit(2, "pt"))
     } else { NULL }
-    countX_start <- if(any(start_count > 0)) {
+    countX_start <- if(any(count0 > 0)) {
       X <- rep(FALSE, 5)
-      X[seq_len(start_count[1])] <- TRUE
-      X[seq_len(start_count[2])+3] <- TRUE
+      X[seq_len(count0[1])] <- TRUE
+      X[seq_len(count0[2])+3] <- TRUE
       segmentsGrob(x0=xs[X] + pitchsize*0.1,
                    y0=ys[X] - pitchsize*0.5,
                    x1=xs[X] + pitchsize*0.9,
@@ -390,12 +397,14 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   }
 
   boxes <- function(d, nrow) {
+    pitchsize <- if(blank) 0.12 else 0.10
     basesize <- 0.13 - (nrow-12)*0.005
     gf <- NULL
     gf <- frameGrob(layout=grid.layout(nrow = nrow, ncol=ncol))
     if(missing(d)) {
       inning_list=tibble(Inning=1:ninnings, X=1:ninnings)
-      onebox <- makebox(basesize=basesize)
+      onebox <- makebox(basesize=basesize, pitchsize=pitchsize,
+                        blank=TRUE)
       for(i in seq_len(nrow)) for (j in seq_len(ncol)) {
         gf <- placeGrob(gf, onebox, row=i, col=j)
       }
@@ -424,7 +433,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
           makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
                   pitchcount=c(Pitches, PitchesSoFar), LastPitch=LastPitch,
                   play=Play, bybase=c(B1, B2, B3, B4),
-                  out=Out, basesize=basesize, top=top)
+                  out=Out, basesize=basesize, pitchsize=pitchsize, blank=blank, top=top)
         )) |> ungroup()
       inning_list <- d |> group_by(Inning) |> summarize(X=min(Inning+X), .groups="drop")
       for(idx in seq_len(nrow(d))) {
