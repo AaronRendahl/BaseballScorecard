@@ -50,44 +50,33 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
 
   makeside <- function(game, side, team=NA, header, nrow, name_style="Name") {
     if(!missing(game)) {
-      header.grob <- upper(game, side,
-                           header = header, name_style = name_style,
+      lineup <- game$lineup |> filter(Side==side)
+      plays <- game$plays |> filter(Side==side)
+    } else {
+      lineup <- NULL
+      plays <- NULL
+      game <- NULL
+    }
+      header.grob <- upper(game,
+                           header = header, side = side,
+                           name_style = name_style,
                            margin.top = margin.top,
                            ninnings = ninnings,
                            inningtextsize = inningtextsize,
                            when_format = when_format)
-      left.grob <- left(game$lineup |> filter(Side==side),
+      left.grob <- left(lineup,
                         nrow=nrow)
-      boxes.grob <- boxes(game$plays |> filter(Side==side),
+      boxes.grob <- boxes(plays,
                           nrow=nrow, ncol=ncol,
                           ninnings=ninnings,
                           inningtextsize=inningtextsize)
-      footer.grob <- lower(game$plays |> filter(Side==side),
+      footer.grob <- lower(plays,
                            n_pitchers = n_pitchers,
                            n_innings = c(ninnings, nextra),
                            panel.left = panel.left,
                            main.width = main.width,
                            inningtextsize = inningtextsize,
                            footer_text = footer_text)
-    } else {
-      header.grob <- upper(header = header, side = side,
-                           team = team, name_style = name_style,
-                           margin.top = margin.top,
-                           ninnings = ninnings,
-                           inningtextsize = inningtextsize,
-                           when_format = when_format)
-      left.grob <- left(nrow=nrow)
-      boxes.grob <- boxes(nrow=nrow, ncol=ncol,
-                          ninnings=ninnings,
-                          inningtextsize=inningtextsize)
-      footer.grob <- lower(n_pitchers = n_pitchers,
-                           n_innings = c(ninnings, nextra),
-                           panel.left = panel.left,
-                           main.width = main.width,
-                           inningtextsize = inningtextsize,
-                           footer_text = footer_text)
-    }
-
     ## do final layout
     page.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=3,
                              widths=c(margin.left, panel.left + main.width, margin.right),
@@ -114,8 +103,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     nr <- max(c(11, game$lineup$Lineup))
     sides <- 1:2
     if(team_name==game$teams$Team[2]) sides <- rev(sides)
-    gf1 <- makeside(game, sides[1], nrow=nr, header="score")
-    gf2 <- makeside(game, sides[2], nrow=nr, header="about")
+    gf1 <- makeside(game, side=sides[1], nrow=nr, header="score")
+    gf2 <- makeside(game, side=sides[2], nrow=nr, header="about")
   }
 
   on.exit(dev.off())

@@ -1,12 +1,14 @@
-boxes <- function(d, nrow=9, ncol=8,
-                  ninnings=7,
-                  inningtextsize=9) {
-  blank <- missing(d)
+boxes <- function(d = NULL,
+                  blank = is.null(d),
+                  nrow = 9,
+                  ncol = 8,
+                  ninnings = 7,
+                  inningtextsize = 9) {
   pitchsize <- if(blank) 0.12 else 0.10
   basesize <- 0.13 - (nrow-12)*0.005
   gf <- NULL
   gf <- frameGrob(layout=grid.layout(nrow = nrow, ncol=ncol))
-  if(missing(d)) {
+  if(blank) {
     inning_list=data.frame(Inning=1:ninnings, X=1:ninnings)
     onebox <- makebox(basesize=basesize, pitchsize=pitchsize,
                       blank=TRUE)

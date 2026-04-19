@@ -1,7 +1,8 @@
-upper <- function(game, side,
+upper <- function(game=NULL, side,
                   name_style="Name",
-                  team = if(!missing(game)) game$teams[[name_style]][side] else NA,
-                  logo = if(!missing(game)) game$teams$Logo[[side]] else NULL,
+                  blank = is.null(game),
+                  team = if(!blank) game$teams[[name_style]][side] else NA,
+                  logo = if(!blank) game$teams$Logo[[side]] else NULL,
                   header = c("none", "about", "score"),
                   margin.top = 0,
                   teamnamesize = 14,
@@ -9,9 +10,10 @@ upper <- function(game, side,
                   ninnings = 7,
                   inningtextsize = 9,
                   when_format = MDY_format) {
+
   header <- match.arg(header)
   dt <- if(header == "about") {
-    if(missing(game)) {
+    if(blank) {
       textGrob("Game Date/Time:",
                x = 0.5,
                y = unit(1, "npc") - unit(margin.top, "inches"),
@@ -25,7 +27,7 @@ upper <- function(game, side,
                gp = gpar(fontsize=14))
     }
   } else if(header == "score"){
-    if(missing(game)) nextra <- 1 else nextra <- 0
+    if(blank) nextra <- 1 else nextra <- 0
     np1 <- ninnings + nextra + 1
     xw <- 0.25 / 7 * np1
     xx <- (1 - xw) + xw / np1 * (1:np1) - xw / (2 * np1)
@@ -39,7 +41,7 @@ upper <- function(game, side,
     ys <- c(0.3, 0.55, 0.8)
     a4 <- segmentsGrob(x0 = 0.45, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
     out <- gList(a2, a3, a4)
-    if(!missing(game)) {
+    if(!blank) {
       score <- get_score(game, "Short") |> as.data.frame()
       names(score)[ncol(score)] <- ninnings + 1
       teams <- rownames(score)

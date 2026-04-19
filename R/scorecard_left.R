@@ -1,9 +1,11 @@
-left <- function(lineup, nrow,
+left <- function(lineup = NULL,
+                 blank = is.null(lineup),
+                 nrow = 9,
                  lineupnumsize = 14,
                  numbersize = 12,
                  numbercolor = "gray50") {
   gf <- frameGrob(layout = grid.layout(ncol = 1, nrow = nrow))
-  if(missing(lineup)) {
+  if(blank) {
     players <- nrow
   } else {
     lineup <- lineup |> filter(!is.na(Number)) |> mutate(Name=replace_na(Name, ""))

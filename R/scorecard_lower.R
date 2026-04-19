@@ -1,4 +1,5 @@
-lower <- function(game,
+lower <- function(game = NULL,
+                  blank = is.null(game),
                   n_pitchers = 6,
                   n_innings = c(7, 2),
                   footer_text = "",
@@ -10,7 +11,7 @@ lower <- function(game,
   ninnings <- n_innings[1]
   nextra <- n_innings[2]
   ncol <- ninnings + nextra
-  if(!missing(game)) {
+  if(!blank) {
     pitch_count <- function(x) {
       x <- x |> mutate(Pitcher=fct_inorder(as.character(Pitcher)))
       bind_rows(
