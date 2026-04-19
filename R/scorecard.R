@@ -18,9 +18,6 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       panels = c(1.5, 1, 0.65), # bottom, left, top
                       n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
                       when_format=MDY_format,
-                      toBase_fun=add_ToBase,
-                      Pitches_fun=add_Pitches,
-                      pattern.out="^X",
                       start_count=c(0,0)
                       ) {
   blank <- missing(game)
