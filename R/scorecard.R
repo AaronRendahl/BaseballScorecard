@@ -14,8 +14,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       team_name = "",
                       footer_text = "",
                       page_size = c(8.5, 11),
-                      margins = c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
-                      panels = c(1.5, 1, 0.65), # bottom, left, top
+                      margins = c(0.12, 0.2, 0.1, 0.2), # top, right, bottom, left
+                      panels = c(0.65, 1.5, 1), # top, bottom, left
                       n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
                       when_format=MDY_format,
                       start_count=c(0,0)
@@ -33,14 +33,14 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   page.width    <- page_size[1]
   page.height   <- page_size[2]
 
-  margin.bottom <- margins[1]
-  margin.left   <- margins[2]
-  margin.top    <- margins[3]
-  margin.right  <- margins[4]
+  margin.top    <- margins[1]
+  margin.right  <- margins[2]
+  margin.bottom <- margins[3]
+  margin.left   <- margins[4]
 
-  panel.bottom  <- panels[1]
-  panel.left    <- panels[2]
-  panel.top     <- panels[3]
+  panel.top     <- panels[1]
+  panel.bottom  <- panels[2]
+  panel.left    <- panels[3]
 
   ncol <- ninnings + nextra
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
