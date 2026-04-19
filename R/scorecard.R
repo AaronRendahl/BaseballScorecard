@@ -17,7 +17,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       margins = c(0.12, 0.2, 0.1, 0.2), # top, right, bottom, left
                       panels = c(0.65, 1.5, 1), # top, bottom, left
                       n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
-                      when_format=MDY_format,
+                      when_format = MDY_format,
                       start_count=c(0,0)
                       ) {
   blank <- missing(game)
@@ -46,9 +46,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  inningtextsize <-  9
-
-  makeside <- function(game, side, team=NA, header, nrow, name_style="Name") {
+  makeside <- function(game, side, team = NA, header, nrow, name_style = "Name") {
     if(!missing(game)) {
       lineup <- game$lineup |> filter(Side==side)
       plays <- game$plays |> filter(Side==side)
@@ -62,20 +60,17 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                            name_style = name_style,
                            margin.top = margin.top,
                            ninnings = ninnings,
-                           inningtextsize = inningtextsize,
                            when_format = when_format)
       left.grob <- left(lineup,
-                        nrow=nrow)
+                        nrow = nrow)
       boxes.grob <- boxes(plays,
-                          nrow=nrow, ncol=ncol,
-                          ninnings=ninnings,
-                          inningtextsize=inningtextsize)
+                          nrow = nrow, ncol = ncol,
+                          ninnings = ninnings)
       footer.grob <- lower(plays,
                            n_pitchers = n_pitchers,
                            n_innings = c(ninnings, nextra),
                            panel.left = panel.left,
                            main.width = main.width,
-                           inningtextsize = inningtextsize,
                            footer_text = footer_text)
     ## do final layout
     page.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=3,
