@@ -46,12 +46,6 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  #pitchsize       <- if(missing(game)) 0.12 else 0.10
-  #pitchboxcolor   <- "gray30"
-  #pitchslashcolor <- "gray30"
-  #basedotcolor <- "gray50"
-  #pitchcountsize <-  8
-
   teamnamesize   <- 14
   footertextsize <-  8; footertextcolor <- "gray20"
   headertextsize <- 10
