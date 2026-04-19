@@ -48,18 +48,6 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
 
   inningtextsize <-  9
 
-  mainbox <- function(plays, lineup, nrow=11) {
-    gf <- frameGrob(layout=grid.layout(ncol=2, nrow=1,
-                                        widths=c(panel.left, main.width)))
-    gf <- placeGrob(gf, row=1, col=1,
-                    grob=left(lineup, nrow=nrow))
-    gf <- placeGrob(gf, row=1, col=2,
-                    grob=boxes(plays, nrow=nrow, ncol=ncol,
-                               ninnings=ninnings,
-                               inningtextsize=inningtextsize))
-    gf
-  }
-
   makeside <- function(game, side, team=NA, header, nrow, name_style="Name") {
     if(!missing(game)) {
       header.grob <- upper(game, side,
@@ -68,8 +56,12 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                            ninnings = ninnings,
                            inningtextsize = inningtextsize,
                            when_format = when_format)
-      main.grob <- mainbox(game$plays |> filter(Side==side),
-                           game$lineup |> filter(Side==side), nrow=nrow)
+      left.grob <- left(game$lineup |> filter(Side==side),
+                        nrow=nrow)
+      boxes.grob <- boxes(game$plays |> filter(Side==side),
+                          nrow=nrow, ncol=ncol,
+                          ninnings=ninnings,
+                          inningtextsize=inningtextsize)
       footer.grob <- lower(game$plays |> filter(Side==side),
                            n_pitchers = n_pitchers,
                            n_innings = c(ninnings, nextra),
@@ -84,7 +76,10 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                            ninnings = ninnings,
                            inningtextsize = inningtextsize,
                            when_format = when_format)
-      main.grob <- mainbox(nrow=nrow)
+      left.grob <- left(nrow=nrow)
+      boxes.grob <- boxes(nrow=nrow, ncol=ncol,
+                          ninnings=ninnings,
+                          inningtextsize=inningtextsize)
       footer.grob <- lower(n_pitchers = n_pitchers,
                            n_innings = c(ninnings, nextra),
                            panel.left = panel.left,
@@ -101,8 +96,12 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                                        margin.bottom)))
     main.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=1,
                              heights = c(panel.top, main.height, panel.bottom)))
+    middle.grid <- frameGrob(layout=grid.layout(ncol=2, nrow=1,
+                             widths=c(panel.left, main.width)))
+    middle.grid <- placeGrob(middle.grid, row=1, col=1, grob=left.grob)
+    middle.grid <- placeGrob(middle.grid, row=1, col=2, grob=boxes.grob)
     main.grid <- placeGrob(main.grid, row=1, col=1, grob=header.grob)
-    main.grid <- placeGrob(main.grid, row=2, col=1, grob=main.grob)
+    main.grid <- placeGrob(main.grid, row=2, col=1, grob=middle.grid)
     main.grid <- placeGrob(main.grid, row=3, col=1, grob=footer.grob)
     page.grid <- placeGrob(page.grid, row=2, col=2, grob=main.grid)
     page.grid
