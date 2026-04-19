@@ -1,10 +1,10 @@
-get_score <- function(game) {
+get_score <- function(game, name_style="Short") {
   score <- game$plays |> summarize(R=sum(ToBase==4), .by=c(Inning, Side)) |>
     pivot_wider(names_from=Inning, values_from=R) |>
     arrange(Side) |> select(-Side) |>
     as.matrix()
   score <- cbind(score, R=rowSums(score, na.rm=TRUE))
-  rownames(score) <- game$teams
+  rownames(score) <- game$teams[[name_style]]
   score
 }
 

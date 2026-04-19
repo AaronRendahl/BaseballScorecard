@@ -11,7 +11,7 @@
 
 scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),
-                      team_name = "", logos = list(),
+                      team_name = "",
                       footer_text = "",
                       page_size = c(8.5, 11),
                       margins = c(0.1, 0.2, 0.12, 0.2), # bottom, left, top, right
@@ -21,30 +21,9 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       toBase_fun=add_ToBase,
                       Pitches_fun=add_Pitches,
                       pattern.out="^X",
-                      start_count=c(0,0),
-                      team_display=team_name
+                      start_count=c(0,0)
                       ) {
   blank <- missing(game)
-
-  if(!blank) {
-    stopifnot(is_tibble(game) && nrow(game)==1)
-    game <- as.list(game)
-    game$teams <- game$game[[1]]$Team
-    game$plays <- game$game[[1]] |> select(Side, Plays) |> unnest(Plays)
-    game$lineup <- game$game[[1]] |> select(Side, Lineup) |> unnest(Lineup)
-    game$game <- NULL
-    ## ToBase: which base they got to (use 0.5 to specify out between; eg, 2.5 if out between 2 and 3)
-    ## Pitches: total pitches during at-bat
-    game$plays <- game$plays |> toBase_fun() |> Pitches_fun()
-    fixB <- function(x) {
-      x |> str_remove(pattern.out) |>
-        str_remove("^\\?") |>
-        str_replace("^([A-Z]+).*$", "\\1")
-    }
-    game$plays$B2 <- fixB(game$plays$B2)
-    game$plays$B3 <- fixB(game$plays$B3)
-    game$plays$B4 <- fixB(game$plays$B4)
-  }
 
   pages <- match.arg(pages)
 
@@ -336,11 +315,11 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   }
 
   upper <- function(game, side,
-                    team = if(!missing(game)) game$teams[side] else NA,
-                    team_display,
+                    name_style="Name",
+                    team = if(!missing(game)) game$teams[[name_style]][side] else NA,
+                    logo = if(!missing(game)) game$teams$Logo[[side]] else NULL,
                     header = c("none", "about", "score")) {
     header <- match.arg(header)
-    if(is.na(team_display)) team_display <- team
     dt <- if(header == "about") {
       if(missing(game)) {
         textGrob("Game Date/Time:",
@@ -369,7 +348,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       a4 <- segmentsGrob(x0 = 0.45, x1 = 1, y0 = ys, y1 = ys, gp = gpar(lwd = 0.25))
       out <- gList(a2, a3, a4)
       if(!missing(game)) {
-        score <- get_score(game) |> as.data.frame()
+        score <- get_score(game, "Short") |> as.data.frame()
         names(score)[ncol(score)] <- ninnings + 1
         teams <- rownames(score)
         score <- score |> mutate(team=1:2) |> pivot_longer(-team, names_to="inning") |>
@@ -385,21 +364,19 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       out
     }
     name <- if(!is.na(team)) {
-      haslogo <- team %in% names(logos)
+      haslogo <- !is.null(logo)
       vs <- case_when(header == "score" ~ "",
                       side == 2 ~ "@ ",
                       side == 1 ~ "v. ",
                       TRUE ~ "")
-      rr <- dim(logos[[team]])[2]/dim(logos[[team]])[1]
-      if(length(rr)==0 || is.na(rr)) rr <- 1
-      teamtext <- textGrob(paste0(vs, team_display),
-                           #x = unit(1 * haslogo, "snpc"),
-                           x= unit(0.8 * rr * haslogo, "snpc"),
+      rr <- if(haslogo) dim(logo)[2]/dim(logo)[1] else 1
+      teamtext <- textGrob(paste0(vs, team),
+                           x = unit(0.8 * rr, "snpc"),
                            y = 0.55,
                            just=c("left", "center"),
                            gp = gpar(fontsize = teamnamesize))
       if(haslogo) {
-        teamlogo <- rasterGrob(logos[[team]], x = 0, y = 1, height = 0.8,
+        teamlogo <- rasterGrob(logo, x = 0, y = 1, height = 0.8,
                                just = c("left", "top"))
         gTree(children = gList(teamlogo, teamtext))
       } else {
@@ -476,14 +453,14 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
     gf
   }
 
-  makeside <- function(game, side, team=NA, header, nrow, team_display=team) {
+  makeside <- function(game, side, team=NA, header, nrow, name_style="Name") {
     if(!missing(game)) {
-      header.grob <- upper(game, side, header=header, team_display=team_display)
+      header.grob <- upper(game, side, header=header, name_style=name_style)
       main.grob <- mainbox(game$plays |> filter(Side==side),
                            game$lineup |> filter(Side==side), nrow=nrow)
       footer.grob <- lower(game$plays |> filter(Side==side))
     } else {
-      header.grob <- upper(header=header, side=side, team=team, team_display=team_display)
+      header.grob <- upper(header=header, side=side, team=team, name_style=name_style)
       main.grob <- mainbox(nrow=nrow)
       footer.grob <- lower()
     }
@@ -509,8 +486,8 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   } else {
     nr <- max(c(11, game$lineup$Lineup))
     sides <- 1:2
-    if(team_name==game$teams[2]) sides <- rev(sides)
-    gf1 <- makeside(game, sides[1], nrow=nr, header="score", team_display=team_display)
+    if(team_name==game$teams$Team[2]) sides <- rev(sides)
+    gf1 <- makeside(game, sides[1], nrow=nr, header="score")
     gf2 <- makeside(game, sides[2], nrow=nr, header="about")
   }
 
