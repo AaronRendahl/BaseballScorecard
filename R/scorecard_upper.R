@@ -1,8 +1,7 @@
 upper <- function(game=NULL, side,
                   name_style="Name",
                   blank = is.null(game),
-                  team = if(!blank) game$teams[[name_style]][side] else NA,
-                  logo = if(!blank) game$teams$Logo[[side]] else NULL,
+                  team = NA, logo = NULL,
                   header = c("none", "about", "score"),
                   margin.top = 0,
                   teamnamesize = 14,
@@ -12,6 +11,10 @@ upper <- function(game=NULL, side,
                   when_format = MDY_format) {
 
   header <- match.arg(header)
+
+  if(!blank) team <- game$teams[[name_style]][side]
+  if(!blank) logo <- game$teams$Logo[[side]]
+
   dt <- if(header == "about") {
     if(blank) {
       textGrob("Game Date/Time:",
@@ -65,7 +68,7 @@ upper <- function(game=NULL, side,
                     TRUE ~ "")
     rr <- if(haslogo) dim(logo)[2]/dim(logo)[1] else 1
     teamtext <- textGrob(paste0(vs, team),
-                         x = unit(0.8 * rr, "snpc"),
+                         x = unit(0.8 * rr * haslogo, "snpc"),
                          y = 0.55,
                          just=c("left", "center"),
                          gp = gpar(fontsize = teamnamesize))

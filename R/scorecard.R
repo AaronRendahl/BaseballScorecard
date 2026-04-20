@@ -4,6 +4,7 @@
 scorecard <- function(game, file="_scorecard_tmp.pdf",
                       pages = c("one", "two"),
                       team_name = "",
+                      logo = NULL,
                       footer_text = "",
                       page_size = c(8.5, 11),
                       margins = c(0.12, 0.2, 0.1, 0.2), # top, right, bottom, left
@@ -38,7 +39,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  makeside <- function(game, side, team = NA, header, nrow, name_style = "Name") {
+  makeside <- function(game, side, team = NA, logo = NULL, header, nrow, name_style = "Name") {
     if(!missing(game)) {
       lineup <- game$lineup |> filter(Side==side)
       plays <- game$plays |> filter(Side==side)
@@ -47,7 +48,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       plays <- NULL
       game <- NULL
     }
-      header.grob <- upper(game,
+      header.grob <- upper(game, team=team, logo=logo,
                            header = header, side = side,
                            name_style = name_style,
                            margin.top = margin.top,
@@ -84,7 +85,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   }
 
   if(missing(game)) {
-    gf1 <- makeside(header="score", side=1, nrow=n_players[1], team=team_name)
+    gf1 <- makeside(header="score", side=1, nrow=n_players[1], team=team_name, logo=logo)
     gf2 <- makeside(header="about", side=2, nrow=n_players[2])
   } else {
     nr <- max(c(11, game$lineup$Lineup))
