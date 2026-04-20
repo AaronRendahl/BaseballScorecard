@@ -45,7 +45,8 @@ boxes <- function(d = NULL,
         makebox(ToBase=ToBase, count=c(Balls, Strikes, Fouls),
                 pitchcount=c(Pitches, PitchesSoFar), LastPitch=LastPitch,
                 play=Play, bybase=c(B1, B2, B3, B4),
-                out=Out, basesize=basesize, pitchsize=pitchsize, blank=blank, top=top)
+                out=Out, basesize=basesize, pitchsize=pitchsize,
+                blank=blank, top=top, sub=New)
       )) |> ungroup()
     inning_list <- d |> group_by(Inning) |> summarize(X=min(Inning+X), .groups="drop")
     for(idx in seq_len(nrow(d))) {

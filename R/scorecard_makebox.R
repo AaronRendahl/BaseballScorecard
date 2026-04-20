@@ -2,7 +2,7 @@ makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
                     out=NA, bybase, play=NA,
                     basesize=0.13,
                     pitchsize=if(blank) 0.12 else 0.10,
-                    blank=TRUE, top=FALSE,
+                    blank=TRUE, top=FALSE, sub=FALSE,
                     basedotcolor="gray50",
                     pitchslashcolor="gray30",
                     pitchboxcolor="gray30",
@@ -48,6 +48,9 @@ makebox <- function(ToBase=NA, count=c(0,0), pitchcount=NA, LastPitch=FALSE,
   box <- rectGrob(gp = gpar(lwd = 0.5))
   if(top) {
     box <- gList(box, segmentsGrob(x0 = 0, x1 = 1, y0 = 1, y1 = 1, gp=gpar(lwd = 2)))
+  }
+  if(sub) {
+    box <- gList(box, segmentsGrob(x0 = 0, x1 = 0, y0 = 0, y1 = 1, gp=gpar(lwd = 2)))
   }
   xs <- basex + c(0, 1, 0, -1, 0) * basesize
   ys <- unit(1, "npc") - basey + c(-1, 0, 1, 0, -1) * basesize
