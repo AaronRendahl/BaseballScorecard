@@ -39,7 +39,9 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
   main.width  <- page.width  - (margin.left + margin.right + panel.left)
   main.height <- page.height - (margin.top + margin.bottom + panel.top + panel.bottom)
 
-  makeside <- function(game, side, team = NA, logo = NULL, header, nrow, name_style = "Name") {
+  makeside <- function(game, side, team = NA, logo = NULL,
+                       header = c("none", "about", "score"),
+                       nrow, name_style = "Name") {
     if(!missing(game)) {
       lineup <- game$lineup |> filter(Side==side)
       plays <- game$plays |> filter(Side==side)
@@ -48,6 +50,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       plays <- NULL
       game <- NULL
     }
+    header <- match.arg(header)
     header.grob <- upper(game, team=team, logo=logo,
                          header = header, side = side,
                          name_style = name_style,
