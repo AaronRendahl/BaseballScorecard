@@ -8,7 +8,7 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
                       footer_text = "",
                       page_size = c(8.5, 11),
                       margins = c(0.12, 0.2, 0.1, 0.2), # top, right, bottom, left
-                      panels = c(0.65, 1.5, 1), # top, bottom, left
+                      panels = c(0.65, 1.5, 1.5), # top, bottom, left
                       n_players = 12, n_innings = c(7, 2), n_pitchers = 6,
                       when_format = MDY_format,
                       start_count=c(0,0)
