@@ -48,33 +48,39 @@ scorecard <- function(game, file="_scorecard_tmp.pdf",
       plays <- NULL
       game <- NULL
     }
-      header.grob <- upper(game, team=team, logo=logo,
-                           header = header, side = side,
-                           name_style = name_style,
-                           margin.top = margin.top,
-                           ninnings = ninnings,
-                           when_format = when_format)
-      left.grob <- left(lineup,
-                        nrow = nrow)
-      boxes.grob <- boxes(plays,
-                          nrow = nrow, ncol = ncol,
-                          ninnings = ninnings)
-      footer.grob <- lower(plays,
-                           n_pitchers = n_pitchers,
-                           n_innings = c(ninnings, nextra),
-                           panel.left = panel.left,
-                           main.width = main.width,
-                           footer_text = footer_text)
+    header.grob <- upper(game, team=team, logo=logo,
+                         header = header, side = side,
+                         name_style = name_style,
+                         margin.top = margin.top,
+                         ninnings = ninnings,
+                         when_format = when_format)
+    left.grob <- left(lineup,
+                      nrow = nrow)
+    boxes.grob <- boxes(plays,
+                        nrow = nrow, ncol = ncol,
+                        ninnings = ninnings)
+    footer.grob <- lower(plays,
+                         n_pitchers = n_pitchers,
+                         n_innings = c(ninnings, nextra),
+                         panel.left = panel.left,
+                         main.width = main.width,
+                         footer_text = footer_text)
     ## do final layout
-    page.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=3,
-                             widths=c(margin.left, panel.left + main.width, margin.right),
-                             heights=c(margin.top,
-                                       panel.top + main.height + panel.bottom,
-                                       margin.bottom)))
-    main.grid <- frameGrob(layout=grid.layout(nrow=3, ncol=1,
-                             heights = c(panel.top, main.height, panel.bottom)))
-    middle.grid <- frameGrob(layout=grid.layout(ncol=2, nrow=1,
-                             widths=c(panel.left, main.width)))
+    page.grid <- frameGrob(layout=grid.layout(
+      nrow=3, ncol=3,
+      widths=c(margin.left, panel.left + main.width, margin.right),
+      heights=c(margin.top,
+                panel.top + main.height + panel.bottom,
+                margin.bottom)
+    ))
+    main.grid <- frameGrob(layout=grid.layout(
+      nrow=3, ncol=1,
+      heights = c(panel.top, main.height, panel.bottom)
+    ))
+    middle.grid <- frameGrob(layout=grid.layout(
+      ncol=2, nrow=1,
+      widths=c(panel.left, main.width)
+    ))
     middle.grid <- placeGrob(middle.grid, row=1, col=1, grob=left.grob)
     middle.grid <- placeGrob(middle.grid, row=1, col=2, grob=boxes.grob)
     main.grid <- placeGrob(main.grid, row=1, col=1, grob=header.grob)
