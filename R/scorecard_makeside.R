@@ -21,6 +21,12 @@ makeside <- function(game, side, team = NA, logo = NULL,
   nextra   <- n_innings[2]
   ncol <- ninnings + nextra
 
+  if(!missing(game)) {
+    ninnings <- max(game$plays$Inning, ninnings)
+    ncol <- max(ncol, ninnings)
+    nextra <- ncol - ninnings
+  }
+
   margin.top    <- margins[1]
   margin.right  <- margins[2]
   margin.bottom <- margins[3]
