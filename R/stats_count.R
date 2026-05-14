@@ -31,8 +31,8 @@ counting_stats_all <- function(g, key=BaseballScorecard::codes) {
            Pitches = Balls + Strikes) |>
     mutate(HBP=HB, BF=PA) |>
     mutate(MP=MP*onPlay, MR=MR*onPlay) |>
-    mutate("SB+"=(SB+AWP+APB+DI+SFC+CS+PO)*(1-Outs),
-           "CS+"=(SB+AWP+APB+DI+SFC+CS+PO)*Outs,
+    mutate("SB+"=(AX+SB+AWP+APB+DI+SFC+CS+PO)*(1-Outs),
+           "CS+"=(AX+SB+AWP+APB+DI+SFC+CS+PO)*Outs,
            "TA"=(AX + Balk + CS + AE + AFC + APB + PO + SB + AWP + SFC + DI)*(1-Outs),
            "TAX"=(AX + Balk + CS + AE + AFC + APB + PO + SB + AWP + SFC + DI)*Outs)
 
